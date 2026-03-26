@@ -163,7 +163,7 @@
   </div>
 
   <script>
-    const GAS_URL = 'TU_NUEVO_URL_AQUI'; // <--- PEGA TU URL AQUI
+    const GAS_URL = https://script.google.com/macros/library/d/1ttZavXzv_pnO1BYj4QDLb7o1RWCKD8Bppfg9L8NwxmOx5U6ePJz_YWjq/2; // <--- PEGA TU URL AQUI
 
     let DATA = { hc: [], users: [], currentPatient: null };
     let USER = null;
