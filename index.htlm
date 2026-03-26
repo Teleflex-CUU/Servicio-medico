@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Teleflex SO - Sistema Unificado</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0F2942; --accent: #0D9488; --bg: #F8FAFC;
+      --text: #1E293B; --border: #E2E8F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); }
+    
+    /* LOGIN */
+    #login-screen { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-box { background: white; padding: 40px; border-radius: 20px; width: 350px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+    
+    /* APP LAYOUT */
+    #app { display: none; }
+    header { background: var(--primary); color: white; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: fixed; top:0; left:0; right:0; z-index: 100; }
+    nav { position: fixed; top: 60px; left: 0; bottom: 0; width: 240px; background: white; border-right: 1px solid var(--border); padding: 20px 0; }
+    main { margin-left: 240px; padding: 80px 20px 20px; }
+
+    .nav-item { padding: 12px 25px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #64748B; transition: 0.2s; }
+    .nav-item:hover { background: #F1F5F9; color: var(--primary); }
+    .nav-item.active { background: #F1F5F9; color: var(--accent); border-right: 4px solid var(--accent); font-weight: 600; }
+
+    /* CARDS & FORMS */
+    .card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 5px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; }
+    input:focus { border-color: var(--accent); }
+    
+    button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* SEARCH BAR */
+    .search-container { position: relative; max-width: 600px; margin-bottom: 20px; }
+    .search-results { position: absolute; top: 100%; left:0; right:0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 50; max-height: 300px; overflow-y: auto; display: none; }
+    .search-item { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+    .search-item:hover { background: #F8FAFC; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 30px; }
+    .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline-event { position: relative; margin-bottom: 20px; }
+    .timeline-event::after { content: ''; position: absolute; left: -25px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid white; }
+    .event-header { display: flex; justify-content: space-between; font-size: 12px; color: #64748B; margin-bottom: 4px; }
+
+    /* TABLA HC */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; padding: 12px; background: #F8FAFC; font-size: 12px; color: #64748B; border-bottom: 2px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+
+    /* TAGS */
+    .badge { padding: 2px 8px; border-radius: 50px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .badge-enf { background: #E0F2F1; color: #0D9488; }
+    .badge-med { background: #E0E7FF; color: #4338CA; }
+    .badge-nut { background: #F0FDF4; color: #16A34A; }
+
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2 style="margin-bottom: 20px">Teleflex SO</h2>
+      <div class="form-group">
+        <label>Usuario</label>
+        <select id="user-select">
+          <option value="">-- Seleccionar --</option>
+        </select>
+      </div>
+      <button class="btn-primary" style="width: 100%" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app">
+    <header>
+      <div style="font-weight: 800; font-size: 18px">TELEFLEX <span style="font-weight: 300; color: var(--accent)">SALUD</span></div>
+      <div style="display: flex; gap: 20px; align-items: center">
+        <span id="header-user-info" style="font-size: 12px"></span>
+        <button onclick="location.reload()" style="background: rgba(255,255,255,0.1); color: white; font-size: 12px">Salir</button>
+      </div>
+    </header>
+
+    <nav>
+      <div class="nav-item active" onclick="showScreen('dashboard')"><i class="fa fa-home"></i> Inicio</div>
+      <div class="nav-item" onclick="showScreen('search')"><i class="fa fa-search"></i> Buscar Paciente</div>
+      <div class="nav-item" onclick="showScreen('hc')"><i class="fa fa-users"></i> Head Count</div>
+      <div class="nav-item" onclick="showScreen('citas')"><i class="fa fa-calendar"></i> Citas</div>
+    </nav>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section id="sc-dashboard" class="screen">
+        <h2 style="margin-bottom: 20px">Resumen General</h2>
+        <div class="grid">
+          <div class="card" style="border-left: 5px solid var(--accent)">
+            <label>Citas para hoy</label>
+            <div id="stat-citas" style="font-size: 24px; font-weight: 800">0</div>
+          </div>
+          <div class="card" style="border-left: 5px solid #F59E0B">
+            <label>Incapacidades Activas</label>
+            <div id="stat-inc" style="font-size: 24px; font-weight: 800">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUSCADOR / EXPEDIENTE -->
+      <section id="sc-search" class="screen" style="display:none">
+        <div class="search-container">
+          <input type="text" id="master-search" placeholder="Escribe nombre o número de empleado..." oninput="searchEmployee(this.value)">
+          <div id="search-drop" class="search-results"></div>
+        </div>
+
+        <div id="patient-file" style="display:none">
+          <div class="card" id="patient-header" style="background: var(--primary); color: white"></div>
+          
+          <div class="grid" style="grid-template-columns: 2fr 1fr">
+            <!-- Columna Izquierda: Formulario según Rol -->
+            <div class="card">
+              <div id="role-form-container">
+                <!-- Se llena dinámicamente según quién entra -->
+              </div>
+              <button class="btn-primary" style="margin-top: 15px" onclick="saveConsultation()">Guardar Consulta</button>
+            </div>
+
+            <!-- Columna Derecha: Historial Unificado -->
+            <div class="card">
+              <label>Historial del Paciente</label>
+              <div id="unified-timeline" class="timeline" style="margin-top: 15px">
+                <p style="color: #94A3B8; font-size: 12px">Busca un paciente para ver su historial.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HEADCOUNT -->
+      <section id="sc-hc" class="screen" style="display:none">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <h3>Base de Datos de Empleados</h3>
+            <button class="btn-primary" onclick="syncHC()">Sincronizar con Google</button>
+          </div>
+          <div style="overflow-x: auto">
+            <table id="hc-table">
+              <thead><tr><th>No. Emp</th><th>Nombre</th><th>Planta</th><th>Turno</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const GAS_URL = 'TU_NUEVO_URL_AQUI'; // <--- PEGA TU URL AQUI
+
+    let DATA = { hc: [], users: [], currentPatient: null };
+    let USER = null;
+
+    // --- INICIALIZACIÓN ---
+    window.onload = () => {
+      google.script.run.withSuccessHandler(res => {
+        DATA.hc = res.hc;
+        DATA.users = res.users;
+        populateUserSelect();
+      }).getData('getInitialData');
+    };
+
+    function populateUserSelect() {
+      const sel = document.getElementById('user-select');
+      DATA.users.forEach(u => {
+        let opt = new Array();
+        sel.innerHTML += `<option value="${u.user}">${u.nombre} (${u.app})</option>`;
+      });
+    }
+
+    function doLogin() {
+      const userKey = document.getElementById('user-select').value;
+      if(!userKey) return alert('Selecciona un usuario');
+      USER = DATA.users.find(u => u.user === userKey);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('header-user-info').innerText = `${USER.nombre} | ${USER.app.toUpperCase()}`;
+      renderRoleForm();
+    }
+
+    // --- NAVEGACIÓN ---
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('sc-' + id).style.display = 'block';
+      event.currentTarget.classList.add('active');
+      if(id === 'hc') renderHC();
+    }
+
+    // --- BUSCADOR ---
+    function searchEmployee(val) {
+      const drop = document.getElementById('search-drop');
+      if(val.length < 2) { drop.style.display = 'none'; return; }
+      const matches = DATA.hc.filter(e => 
+        e.nombre.toLowerCase().includes(val.toLowerCase()) || 
+        String(e.noEmp).includes(val)
+      ).slice(0, 5);
+      
+      drop.innerHTML = matches.map(e => `
+        <div class="search-item" onclick="selectPatient('${e.noEmp}')">
+          <strong>${e.nombre}</strong><br>
+          <small>No. ${e.noEmp} | ${e.planta}</small>
+        </div>
+      `).join('');
+      drop.style.display = 'block';
+    }
+
+    function selectPatient(noEmp) {
+      const p = DATA.hc.find(e => String(e.noEmp) === String(noEmp));
+      DATA.currentPatient = p;
+      document.getElementById('search-drop').style.display = 'none';
+      document.getElementById('patient-file').style.display = 'block';
+      
+      document.getElementById('patient-header').innerHTML = `
+        <h3>${p.nombre}</h3>
+        <p>No. Empleado: ${p.noEmp} | Planta: ${p.planta} | Turno: ${p.turno} | Depto: ${p.depto}</p>
+      `;
+
+      // Cargar historial compartido
+      google.script.run.withSuccessHandler(history => {
+        renderTimeline(history);
+      }).getData('getPatientHistory', { noEmp: p.noEmp });
+    }
+
+    function renderTimeline(history) {
+      const tl = document.getElementById('unified-timeline');
+      let events = [];
+      
+      history.enfermeria.forEach(r => events.push({...r, type: 'enf', label: 'Enfermería'}));
+      history.medico.forEach(r => events.push({...r, type: 'med', label: 'Médico'}));
+      history.nutricion.forEach(r => events.push({...r, type: 'nut', label: 'Nutrición'}));
+
+      events.sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+      tl.innerHTML = events.map(e => `
+        <div class="timeline-event">
+          <div class="event-header">
+            <span class="badge badge-${e.type}">${e.label}</span>
+            <span>${e.fecha}</span>
+          </div>
+          <div style="font-weight: 600; font-size: 13px">${e.diagnostico || e.imcCategoria}</div>
+          <div style="font-size: 11px; color: #64748B">${e.tratamiento || e.recomendaciones || ''}</div>
+        </div>
+      `).join('');
+    }
+
+    // --- FORMULARIOS DINÁMICOS POR ROL ---
+    function renderRoleForm() {
+      const container = document.getElementById('role-form-container');
+      let html = `<h4>Nueva Nota de ${USER.app.toUpperCase()}</h4><br>`;
+      
+      if(USER.app === 'enfermeria') {
+        html += `
+          <div class="grid">
+            <div class="form-group"><label>T/A</label><input id="f-ta"></div>
+            <div class="form-group"><label>FC</label><input id="f-fc"></div>
+            <div class="form-group"><label>Temp</label><input id="f-temp"></div>
+          </div>
+          <div class="form-group"><label>Diagnóstico</label><input id="f-dx"></div>
+          <div class="form-group"><label>Tratamiento</label><textarea id="f-tto"></textarea></div>
+        `;
+      } else if(USER.app === 'medico') {
+        html += `
+          <div class="form-group"><label>Motivo Consulta</label><textarea id="f-motivo"></textarea></div>
+          <div class="form-group"><label>CIE-10 / Diagnóstico</label><input id="f-dx"></div>
+          <div class="form-group"><label>Plan de Manejo</label><textarea id="f-tto"></textarea></div>
+        `;
+      } else if(USER.app === 'nutricion') {
+        html += `
+          <div class="grid">
+            <div class="form-group"><label>Peso (kg)</label><input type="number" id="f-peso"></div>
+            <div class="form-group"><label>Talla (cm)</label><input type="number" id="f-talla"></div>
+          </div>
+          <div class="form-group"><label>Categoría IMC</label><input id="f-cat" readonly></div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    // --- GUARDADO UNIFICADO ---
+    async function saveConsultation() {
+      if(!DATA.currentPatient) return alert('Selecciona un paciente');
+      
+      const payload = {
+        id: Date.now(),
+        fecha: new Date().toLocaleDateString('es-MX'),
+        noEmp: DATA.currentPatient.noEmp,
+        nombre: DATA.currentPatient.nombre,
+        registradoPor: USER.nombre
+      };
+
+      if(USER.app === 'enfermeria') {
+        payload.diagnostico = document.getElementById('f-dx').value;
+        payload.tratamiento = document.getElementById('f-tto').value;
+        payload.ta = document.getElementById('f-ta').value;
+        // ... añadir más campos
+        executeSave('saveEnf', payload);
+      }
+      // ... añadir lógica para médico y nutrición
+    }
+
+    function executeSave(action, payload) {
+      google.script.run.withSuccessHandler(() => {
+        alert('Guardado con éxito');
+        selectPatient(payload.noEmp); // Recargar historial
+      }).doPost({ action, payload });
+    }
+
+    function renderHC() {
+      const tbody = document.querySelector('#hc-table tbody');
+      tbody.innerHTML = DATA.hc.slice(0, 50).map(e => `
+        <tr><td>${e.noEmp}</td><td>${e.nombre}</td><td>${e.planta}</td><td>${e.turno}</td></tr>
+      `).join('');
+    }
+
+  </script>
+</body>
+</html>
