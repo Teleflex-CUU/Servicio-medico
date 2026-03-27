@@ -89,14 +89,31 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .cp{padding:16px}
 
 /* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:8px 14px;transition:.15s;white-space:nowrap}
-.btn:hover{opacity:.88}.btn:active{transform:scale(.97)}
-.btn-nv{background:var(--nv);color:#fff}.btn-gr{background:var(--gr);color:#fff}
-.btn-tl{background:var(--tl);color:#fff}.btn-bl{background:var(--bl);color:#fff}
-.btn-gold{background:var(--gold);color:#fff}.btn-rd{background:var(--rd);color:#fff}
-.btn-gh{background:transparent;color:var(--tx2);border:1.5px solid var(--bor)}.btn-gh:hover{background:var(--sf3)}
-.btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px; /* Botones con letra más grande */
+  font-weight: 700;
+  cursor: pointer;
+  padding: 10px 18px; /* Botones más altos */
+  transition: .15s;
+}
 
+.fi input, .fi select, .fi textarea {
+  width: 100%;
+  padding: 12px 15px; /* Campos más grandes */
+  border: 1.5px solid var(--bor);
+  border-radius: 10px;
+  font-size: 15px; /* Texto dentro de campos más grande */
+  font-family: inherit;
+  outline: none;
+  background: var(--sf);
+  color: var(--tx);
+}
 /* ── FORMS ── */
 .fi{margin-bottom:12px}
 .fi label{display:block;font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
