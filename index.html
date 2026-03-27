@@ -1,4 +1,4 @@
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -21,7 +21,7 @@
   --sf:#FFFFFF;--sf2:#F8FAFC;--sf3:#F1F5F9;--sf4:#E2E8F0;
   --bor:#E2E8F0;--bor2:#CBD5E1;
   --tx:#0F172A;--tx2:#475569;--tx3:#94A3B8;
-  --nh:48px;--r:10px;
+  --nh:52px;--r:10px;
   --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
   --shl:0 10px 30px rgba(0,0,0,.12),0 4px 8px rgba(0,0,0,.06);
 }
@@ -72,7 +72,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .rb-med{background:var(--bl);color:#fff}.rb-enf{background:var(--tl);color:#fff}.rb-nut{background:var(--gr);color:#fff}
 
 /* ── SCREENS ── */
-.sc{display:none;padding:calc(var(--nh)+10px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
+.sc{display:none;padding:calc(var(--nh)+22px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
 .sc.on{display:block}
 
 /* ── CARDS ── */
@@ -1164,6 +1164,24 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   </div>
 </div>
 
+
+<!-- Pantalla de carga sync -->
+<div id="sync-inicio" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(15,41,66,.92);backdrop-filter:blur(6px);flex-direction:column;align-items:center;justify-content:center">
+  <div style="background:var(--sf);border-radius:20px;padding:36px 48px;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.4);max-width:340px;width:90%">
+    <div style="font-size:48px;margin-bottom:16px">🔄</div>
+    <div style="font-size:17px;font-weight:800;color:var(--nv);margin-bottom:8px">Sincronizando datos</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:20px">Cargando HC, consultas e incapacidades desde Google Sheets...</div>
+    <!-- Barra de progreso animada -->
+    <div style="background:var(--sf3);border-radius:10px;height:6px;overflow:hidden;margin-bottom:12px">
+      <div id="sync-bar" style="height:100%;background:linear-gradient(90deg,#0D6B5E,#166534);border-radius:10px;width:0%;transition:width .5s ease;animation:syncprog 2s ease-in-out infinite"></div>
+    </div>
+    <div id="sync-msg" style="font-size:11px;color:var(--tx3)">Conectando con el servidor...</div>
+  </div>
+</div>
+<style>
+@keyframes syncprog{0%{width:15%}50%{width:85%}100%{width:15%}}
+</style>
+
 <div id="toast"></div>
 </div><!-- /app -->
 <script>
@@ -1282,9 +1300,27 @@ function initApp(){
   if(ms)ms.innerHTML='<option value="">Todos</option>'+MESES.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
 
   // Cargar local
-  HC=ld(SK.hc)||[];CONS=ld(SK.cons)||[];INC=ld(SK.inc)||[];CITAS=ld(SK.citas)||[];
-  syncAll();
-  setTimeout(()=>renderCaptura(),200);
+  // Cargar datos locales primero (instantáneo)
+  HC=ld(SK.hc)||[];
+  CONS=ld(SK.cons)||[];
+  INC=ld(SK.inc)||[];
+  CITAS=ld(SK.citas)||[];
+
+  // Mostrar pantalla de carga mientras sincroniza
+  mostrarSyncInicio();
+
+  // Sync automático al inicio
+  syncAll(false).then(()=>{
+    ocultarSyncInicio();
+    renderCaptura();
+    // Si no hay HC después del sync, mostrar aviso
+    if(!HC.length){
+      toast('⚠️ Sin Head Count — ve a la pestaña HC para cargar empleados','inf');
+    }
+  }).catch(()=>{
+    ocultarSyncInicio();
+    renderCaptura();
+  });
 }
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
@@ -1297,7 +1333,17 @@ function go(id){
   if(id==='citas') renderCitas();
   if(id==='dash') renderDash();
   if(id==='usr') renderUsuarios();
-  if(id==='hc'&&HC.length){document.getElementById('hc-upload').style.display='none';document.getElementById('hc-table').style.display='block';renderHC('');}
+  if(id==='hc'){
+    if(HC.length){
+      document.getElementById('hc-upload').style.display='none';
+      document.getElementById('hc-table').style.display='block';
+      const bd=document.getElementById('btn-del-hc');if(bd)bd.style.display='';
+      renderHC('');
+    }
+    // Show last sync time
+    const cnt=document.getElementById('hc-cnt');
+    if(cnt) cnt.textContent=HC.length+' empleados'+(HC.length?' · último sync: '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'');
+  }
 }
 function toggleDark(){document.documentElement.classList.toggle('dark');const d=document.documentElement.classList.contains('dark');localStorage.setItem('so_dark',d?'1':'0');const b=document.getElementById('btn-dark');if(b)b.textContent=d?'☀️':'🌙';}
 function onPeriodChange(){
@@ -1312,16 +1358,52 @@ function onPeriodChange(){
 // ════════════════════════════════════════════════════════════════
 // SYNC
 // ════════════════════════════════════════════════════════════════
-async function syncAll(){
+async function syncAll(silencioso){
   setSyncDot('busy');
+  if(!silencioso) toast('🔄 Sincronizando datos...','inf');
+  const inicio=Date.now();
+  let errores=0;
   try{
-    const [rHC,rCONS,rINC,rCIT]=await Promise.all([gasGet({action:'getHC'}),gasGet({action:'getConsultas'}),gasGet({action:'getInc'}),gasGet({action:'getCitas'})]);
-    if(rHC.ok&&Array.isArray(rHC.data)&&rHC.data.length){HC=rHC.data;sv(SK.hc,HC);}
+    // Sync secuencial para mostrar progreso
+    // 1. HC — prioritario
+    const rHC=await gasGet({action:'getHC'});
+    if(rHC.ok&&Array.isArray(rHC.data)&&rHC.data.length){
+      HC=rHC.data;sv(SK.hc,HC);
+      // Actualizar UI del HC si está cargado
+      const cnt=document.getElementById('hc-cnt');
+      if(cnt)cnt.textContent=HC.length+' empleados';
+      if(HC.length){
+        const up=document.getElementById('hc-upload');if(up)up.style.display='none';
+        const tb=document.getElementById('hc-table');if(tb)tb.style.display='block';
+        const bd=document.getElementById('btn-del-hc');if(bd)bd.style.display='';
+      }
+    } else errores++;
+
+    // 2. Resto en paralelo
+    const [rCONS,rINC,rCIT]=await Promise.all([
+      gasGet({action:'getConsultas'}),
+      gasGet({action:'getInc'}),
+      gasGet({action:'getCitas'})
+    ]);
     if(rCONS.ok&&Array.isArray(rCONS.data)){CONS=rCONS.data;sv(SK.cons,CONS);}
+    else errores++;
     if(rINC.ok&&Array.isArray(rINC.data)){INC=rINC.data;sv(SK.inc,INC);}
+    else errores++;
     if(rCIT.ok&&Array.isArray(rCIT.data)){CITAS=rCIT.data;sv(SK.citas,CITAS);}
-    setSyncDot('ok');toast('✅ Sync completo · '+HC.length+' empleados','ok');
-  }catch(e){setSyncDot('err');toast('⚠️ Usando datos locales','inf');}
+    else errores++;
+
+    const seg=((Date.now()-inicio)/1000).toFixed(1);
+    setSyncDot('ok');
+    if(!silencioso){
+      if(errores===0)
+        toast('✅ Sync completo · '+HC.length+' empleados · '+CONS.length+' consultas · '+seg+'s','ok');
+      else
+        toast('⚠️ Sync parcial · '+errores+' error(es) · usando datos locales para el resto','inf');
+    }
+  }catch(e){
+    setSyncDot('err');
+    if(!silencioso) toast('⚠️ Sin conexión — usando datos locales','inf');
+  }
 }
 async function syncHC(){setSyncDot('busy');try{const r=await gasGet({action:'getHC'});if(r.ok&&Array.isArray(r.data)&&r.data.length){HC=r.data;sv(SK.hc,HC);document.getElementById('hc-cnt').textContent=HC.length+' empleados';document.getElementById('hc-upload').style.display='none';document.getElementById('hc-table').style.display='block';const b=document.getElementById('btn-del-hc');if(b)b.style.display='';renderHC('');setSyncDot('ok');toast('✅ HC: '+HC.length,'ok');}else{setSyncDot('err');toast('Sin HC en GAS','err');}}catch(e){setSyncDot('err');}}
 async function syncInc(){setSyncDot('busy');try{const r=await gasGet({action:'getInc'});if(r.ok&&Array.isArray(r.data)){INC=r.data;sv(SK.inc,INC);renderInc();setSyncDot('ok');}else setSyncDot('err');}catch(e){setSyncDot('err');}}
@@ -3187,6 +3269,24 @@ function imprimirEncuesta(){
   <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir<\/button>
   <\/body><\/html>`);
   w.document.close();setTimeout(()=>w.print(),600);
+}
+
+
+function mostrarSyncInicio(){
+  const el=document.getElementById('sync-inicio');
+  if(el) el.style.display='flex';
+  // Mensajes rotativos
+  const msgs=['Conectando con el servidor...','Cargando Head Count...','Sincronizando consultas...','Cargando incapacidades...','Casi listo...'];
+  let i=0;
+  window._syncMsgInterval=setInterval(()=>{
+    const m=document.getElementById('sync-msg');
+    if(m){m.textContent=msgs[i%msgs.length];i++;}
+  },800);
+}
+function ocultarSyncInicio(){
+  const el=document.getElementById('sync-inicio');
+  if(el) el.style.display='none';
+  if(window._syncMsgInterval) clearInterval(window._syncMsgInterval);
 }
 
 // ════════════════════════════════════════════════════════════════
