@@ -203,6 +203,20 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .tinf{background:var(--bl3);color:#1E40AF;border:1px solid #BFDBFE}
 .edit-mode{border:2px solid var(--gold)!important;background:var(--gold3)!important}
 @media print{.no-print{display:none!important}}
+
+  /* Alertas de frecuencia y alarmas */
+.frec-v { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+.frec-a { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 10px; border-radius: 8px; margin-bottom: 10px; animation: pulse 2s infinite; }
+.frec-r { background: #fef2f2; color: #991b1b; border: 2px solid #fca5a5; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; animation: shake 0.5s infinite; }
+.alergia-alarm { background: #fff9c4 !important; border: 2px solid #fbc02d !important; color: #827717 !important; font-weight: 800; padding: 12px; border-radius: 8px; margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+
+@keyframes pulse { 0% {opacity:1} 50% {opacity:0.7} 100% {opacity:1} }
+@keyframes shake { 0% { transform: translate(1px, 1px); } 10% { transform: translate(-1px, -1px); } 100% { transform: translate(0, 0); } }
+
+/* Estilos para seguimiento nutricional */
+.nut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
+.nut-card { background: var(--sf3); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--bor); }
+.nut-val { font-size: 16px; font-weight: 800; color: var(--nv); }
 </style>
 </head>
 <body>
@@ -251,6 +265,34 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <div class="sh2">
     <div><h2 id="inicio-titulo">Bienvenido</h2><p id="inicio-sub">Busca un empleado para comenzar</p></div>
     <button class="btn btn-gh btn-sm" onclick="syncAll()">🔄 Sync</button>
+    <div class="sh2">
+    <div><h2 id="inicio-titulo">Bienvenido</h2><p id="inicio-sub">Busca un empleado para comenzar</p></div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-ext" style="background:#7C3AED; color:white" onclick="nuevaConsultaExterna()">👤 Empleado Externo</button>
+      <button class="btn btn-gh btn-sm" onclick="syncAll()">🔄 Sync</button>
+    </div>
+  <!-- PANTALLA DE CAPTURA INDEPENDIENTE -->
+<div class="sc" id="sc-captura">
+  <div class="card cp">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+      <h2 style="color:var(--nv)">📝 Nueva Valoración Clínica</h2>
+      <button class="btn btn-gh" onclick="go('inicio')">❌ Cancelar / Volver</button>
+    </div>
+    
+    <!-- Aquí aparecerán las alertas de frecuencia y alergias automáticamente -->
+    <div id="cap-alertas-frecuencia"></div>
+    <div id="cap-alertas-alergias"></div>
+
+    <div id="form-dinamico-captura">
+       <!-- El contenido cambia según si eres Médico, Enfermera o Nutrióloga -->
+    </div>
+    
+    <div style="margin-top:20px; display:flex; gap:10px">
+      <button class="btn btn-tl" style="flex:1; background:var(--gr); color:white; padding:15px" onclick="guardarConsultaNueva()">💾 Guardar Valoración Permanentemente</button>
+    </div>
+  </div>
+</div>
+</div>
   </div>
   <div class="card cp" style="margin-bottom:14px">
     <div class="sec-t">🔍 Buscador maestro de empleados</div>
@@ -1446,5 +1488,71 @@ window.addEventListener('unhandledrejection',e=>{console.warn('[AUNA SO]',e.reas
 // Cargar usuarios al iniciar
 document.addEventListener('DOMContentLoaded',()=>{cargarUsuariosLogin();});
 if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
+  // Memoria para empleados externos
+let EXTERNOS = JSON.parse(localStorage.getItem('auna_externos') || '[]');
+
+function nuevaConsultaExterna() {
+    const nombre = prompt("Nombre del visitante/externo:");
+    const empresa = prompt("Empresa a la que pertenece:");
+    if (!nombre || !empresa) return;
+
+    _empActual = {
+        noEmp: 'EXT-' + Date.now(),
+        nombre: nombre.toUpperCase(),
+        depto: empresa.toUpperCase(),
+        planta: 'EXTERNO',
+        externo: true
+    };
+    
+    // Guardar en memoria para que aparezca en el buscador después
+    EXTERNOS.push(_empActual);
+    localStorage.setItem('auna_externos', JSON.stringify(EXTERNOS));
+    
+    abrirCapturaNueva();
+}
+
+// Función para detectar frecuencia de visitas (Alertas de colores)
+function checkFrecuencia(noEmp) {
+    const hoy = new Date();
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hoy.getDate() - 30);
+    
+    // Contamos cuantas veces aparece este noEmp en el historial global
+    const historialTotal = [...CONS]; 
+    const visitas = historialTotal.filter(c => 
+        String(c.noEmp) === String(noEmp) && 
+        new Date(c.fecha.split('/').reverse().join('-')) >= hace30Dias
+    ).length;
+
+    let html = '';
+    if (visitas >= 8) {
+        html = `<div class="frec-r">🚨 ALERTA ROJA: El paciente ha visitado salud ocupacional ${visitas} veces en los últimos 30 días. (Abuso detectado)</div>`;
+    } else if (visitas >= 4) {
+        html = `<div class="frec-a">⚠️ ATENCIÓN: Frecuencia moderada. ${visitas} visitas en el último mes.</div>`;
+    } else if (visitas > 0) {
+        html = `<div class="frec-v">✅ Frecuencia normal: ${visitas} visitas en los últimos 30 días.</div>`;
+    }
+    document.getElementById('cap-alertas-frecuencia').innerHTML = html;
+}
+
+// Redirigir a la pantalla de captura y activar alertas
+function abrirCapturaNueva() {
+    if(!_empActual) return toast("Busca un empleado primero", "err");
+    
+    // Cambiar a la pantalla de captura
+    go('captura'); 
+    
+    // 1. Mostrar alertas de frecuencia
+    checkFrecuencia(_empActual.noEmp);
+    
+    // 2. Mostrar alerta de alergias si existen
+    if(_empActual.alergias) {
+        document.getElementById('cap-alertas-alergias').innerHTML = 
+        `<div class="alergia-alarm">⚡ DATO DE ALARMA - ALERGIAS: ${_empActual.alergias}</div>`;
+    }
+    
+    // 3. Renderizar el formulario (médico, enf o nut) en el nuevo div
+    renderPanelCaptura(_empActual); 
+}
 </script>
 </body></html>
