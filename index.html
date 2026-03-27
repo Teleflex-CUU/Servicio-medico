@@ -1596,5 +1596,65 @@ function autoCalcIncapacidad() {
         </div>
     </div>`;
 }
+async function guardarConsultaNueva() {
+    if(!_empActual) return toast("Error: No hay empleado seleccionado", "err");
+    
+    const tipo = USER.rol === 'medico' ? 'MED' : USER.rol === 'nutricion' ? 'NUT' : 'ENF';
+    const ahora = new Date();
+    const folio = tipo + '-' + Date.now().toString().slice(-6);
+
+    // Recolectamos los datos básicos
+    const cons = {
+        folio: folio,
+        tipoAtencion: tipo,
+        fecha: ahora.toLocaleDateString('es-MX'),
+        hora: ahora.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}),
+        noEmp: _empActual.noEmp,
+        nombre: _empActual.nombre,
+        planta: _empActual.planta,
+        turno: _empActual.turno || USER.turno,
+        diagnostico: g('f-dg'),
+        plan: g('f-plan'),
+        alergias: g('f-al') || _empActual.alergias,
+        cronicos: g('f-cr') || _empActual.cronicos,
+        registradoPor: USER.nombre,
+        // Datos de Nutrición (si aplica)
+        peso: g('f-peso'),
+        talla: g('f-talla'),
+        grasa: g('f-grasa'),
+        visceral: g('f-visc'),
+        agua: g('f-agua'),
+        magra: g('f-magra'),
+        // Datos Médicos
+        ta: g('f-ta'),
+        fc: g('f-fc'),
+        temp: g('f-temp'),
+        incapacidad: g('f-incap') || 'No',
+        incInicio: g('f-ii'),
+        incFin: g('f-if'),
+        incDias: g('f-ds')
+    };
+
+    // Guardar Localmente
+    CONS.push(cons);
+    sv(SK.cons, CONS);
+
+    toast("⏳ Guardando en la nube...", "inf");
+    
+    // Enviar a GAS
+    const r = await gasPost({action: 'saveConsulta', val: cons});
+    
+    if(r.ok) {
+        toast("✅ Valoración guardada correctamente", "ok");
+        go('inicio'); // Volver al inicio
+        abrirExpediente(_empActual.noEmp); // Recargar expediente para ver la nueva nota
+    } else {
+        toast("⚠️ Guardado local (sin conexión)", "inf");
+        go('inicio');
+    }
+}
+
+</script> <!-- Esta es la etiqueta de cierre que ya tienes en tu archivo -->
+
 </script>
 </body></html>
