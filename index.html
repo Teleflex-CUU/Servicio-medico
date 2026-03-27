@@ -11,7 +11,7 @@
 <style>
 :root{
   --nv:#0F2942;--nv2:#1a3a5c;
-  --gold:#B8962E;--gold2:#F5E6C0;--gold3:#FBF5E6;
+  --gold:#8B6914;--gold2:#EDD9A3;--gold3:#FAF3E0;
   --tl:#0D6B5E;--tl2:#A7D5CE;--tl3:#E8F5F3;
   --gr:#16A34A;--gr2:#DCFCE7;--gr3:#F0FDF4;--gr4:#BBF7D0;
   --bl:#1D3F8A;--bl2:#BFDBFE;--bl3:#EFF6FF;
@@ -39,14 +39,14 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 
 /* ── LOGIN ── */
 #login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(145deg,#0F2942 0%,#0D6B5E 50%,#B8962E 100%)}
+  background:linear-gradient(145deg,#0A1929 0%,#0F2942 40%,#0D6B5E 100%)}
 .lc{background:var(--sf);border-radius:20px;padding:36px;width:100%;max-width:420px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
 .lc-logos{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bor)}
 .lc-logos img{object-fit:contain}
 .lc h1{font-size:20px;font-weight:800;color:var(--nv);text-align:center;margin-bottom:3px}
 .lc p{font-size:12px;color:var(--tx3);text-align:center;margin-bottom:24px}
 #lerr{display:none;background:var(--rd2);color:var(--rd);border-radius:8px;padding:9px 13px;font-size:12px;margin-bottom:14px;text-align:center}
-.lbtn{width:100%;background:linear-gradient(135deg,var(--nv),var(--tl));color:#fff;border:none;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:6px}
+.lbtn{width:100%;background:linear-gradient(135deg,#0F2942,#0D6B5E);color:#fff;border:none;padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-top:6px}
 .lbtn:hover{opacity:.9;transform:translateY(-1px)}
 
 /* ── NAV ── */
@@ -216,17 +216,17 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 /* Alerta frecuencia */
 .freq-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
 .freq-verde{background:#DCFCE7;color:#15803D;border:1px solid #86EFAC}
-.freq-amarillo{background:#FEF9C3;color:#A16207;border:1px solid #FDE047}
+.freq-amarillo{background:#FEF3C7;color:#78350F;border:1px solid #D97706}
 .freq-rojo{background:#FEE2E2;color:#B91C1C;border:1px solid #FCA5A5}
 /* Alerta alergia */
 .alerta-alergia{background:#FEF3C7;border:2px solid #F59E0B;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:700;color:#92400E;display:flex;align-items:center;gap:7px}
 /* Botones captura */
-.btn-nueva-consulta{background:linear-gradient(135deg,var(--tl),var(--gr));color:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px rgba(13,107,94,.3);transition:.2s}
+.btn-nueva-consulta{background:linear-gradient(135deg,#0D6B5E,#0F766E);color:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px rgba(13,107,94,.3);transition:.2s}
 .btn-nueva-consulta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(13,107,94,.4)}
-.btn-nueva-consulta.med{background:linear-gradient(135deg,var(--nv),var(--bl));box-shadow:0 4px 15px rgba(29,63,138,.3)}
+.btn-nueva-consulta.med{background:linear-gradient(135deg,#0F2942,#1D3F8A);box-shadow:0 4px 15px rgba(15,41,66,.25)}
 .btn-nueva-consulta.med:hover{box-shadow:0 6px 20px rgba(29,63,138,.4)}
-.btn-nueva-consulta.nut{background:linear-gradient(135deg,var(--gr),#059669);box-shadow:0 4px 15px rgba(22,163,74,.3)}
-.btn-ext{background:linear-gradient(135deg,var(--am),#D97706);color:#fff;border:none;border-radius:12px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(217,119,6,.25);transition:.2s}
+.btn-nueva-consulta.nut{background:linear-gradient(135deg,#166534,#15803D);box-shadow:0 4px 15px rgba(22,101,52,.25)}
+.btn-ext{background:linear-gradient(135deg,#475569,#334155);color:#fff;border:none;border-radius:12px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px rgba(71,85,105,.25);transition:.2s}
 .btn-ext:hover{transform:translateY(-1px)}
 /* APS grid */
 .ap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px}
@@ -285,7 +285,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 <!-- PANTALLAS -->
 
 <!-- ═══ INICIO / EXPEDIENTE ═══ -->
-<div class="sc on" id="sc-inicio">
+<div class="sc" id="sc-inicio">
   <div class="sh2">
     <div><h2 id="inicio-titulo">Bienvenido</h2><p id="inicio-sub">Busca un empleado para comenzar</p></div>
     <button class="btn btn-gh btn-sm" onclick="syncAll()">🔄 Sync</button>
@@ -321,7 +321,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 
 
 <!-- ═══ CAPTURA ═══ -->
-<div class="sc" id="sc-captura">
+<div class="sc on" id="sc-captura">
   <div class="sh2">
     <div><h2 id="cap-titulo">Nueva consulta</h2><p id="cap-sub"></p></div>
     <button class="btn btn-gh btn-sm" onclick="go('inicio')">← Volver</button>
@@ -564,7 +564,13 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
         <div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="inc-if" class="auto" oninput="calcDias('inc-ii','inc-if','inc-ds')"></div>
       </div>
     </div>
-    <div class="mf"><button class="btn btn-gh" onclick="closeModal('mo-inc')">Cancelar</button><button class="btn btn-tl" onclick="guardarInc()">💾 Guardar</button></div>
+    <div class="mb" style="padding-top:0">
+      <div class="g2">
+        <div class="fi" style="margin:0"><label>Registrado por</label><input type="text" id="inc-reg" readonly class="auto"></div>
+        <div class="fi" style="margin:0"><label>Fecha captura</label><input type="text" id="inc-fecha-cap" readonly class="auto"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-gh" onclick="closeModal('mo-inc')">Cancelar</button><button class="btn btn-tl" onclick="guardarInc()">💾 Guardar incapacidad</button></div>
   </div>
 </div>
 
@@ -690,7 +696,14 @@ const g=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
 const sv2=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg,t='ok'){const c=document.createElement('div');c.className='ti t'+(t==='err'?'err':t==='inf'?'inf':'ok');c.textContent=msg;document.getElementById('toast').appendChild(c);setTimeout(()=>c.remove(),3500);}
-function openModal(id){const e=document.getElementById(id);if(e)e.classList.add('open');if(id==='mo-ext')cargarExtAutocomplete();}
+function openModal(id){
+  const e=document.getElementById(id);if(e)e.classList.add('open');
+  if(id==='mo-ext') cargarExtAutocomplete();
+  if(id==='mo-inc'){
+    const reg=document.getElementById('inc-reg');if(reg)reg.value=USER?USER.nombre:'';
+    const fc=document.getElementById('inc-fecha-cap');if(fc)fc.value=new Date().toLocaleDateString('es-MX');
+  }
+}
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open');}
 function setSyncDot(s){const d=document.getElementById('sync-dot');if(d)d.className='dot '+(s==='ok'?'dok':s==='busy'?'dbusy':'derr');}
 function getWeek(d){const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);const w=new Date(dt.getFullYear(),0,4);return 1+Math.round(((dt-w)/86400000-3+(w.getDay()+6)%7)/7);}
@@ -742,8 +755,8 @@ function initApp(){
 
   // Tabs por rol
   const allTabs=[
-    {id:'inicio',icon:'🔍',label:'Expediente',roles:['medico','enfermeria','nutricion']},
-    {id:'captura',icon:'📝',label:'Nueva consulta',roles:['medico','enfermeria','nutricion']},
+    {id:'inicio',icon:'📁',label:'Historial',roles:['medico','enfermeria','nutricion']},
+    {id:'captura',icon:'📝',label:'Consulta',roles:['medico','enfermeria','nutricion']},
     {id:'inc',icon:'📋',label:'Incapacidades',roles:['medico','enfermeria']},
     {id:'citas',icon:'📅',label:'Citas',roles:['medico','enfermeria','nutricion']},
     {id:'dash',icon:'📊',label:'Dashboard',roles:['medico']},
@@ -751,7 +764,7 @@ function initApp(){
     {id:'hc',icon:'📂',label:'Head Count',roles:['medico','enfermeria','nutricion']},
   ];
   document.getElementById('nav-tabs').innerHTML=allTabs.filter(t=>t.roles.includes(USER.rol)).map(t=>
-    `<button class="tb${t.id==='inicio'?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')">${t.icon} ${t.label}</button>`).join('');
+    `<button class="tb${t.id==='captura'?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')">${t.icon} ${t.label}</button>`).join('');
 
   // Dark mode
   if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
@@ -768,6 +781,7 @@ function initApp(){
   // Cargar local
   HC=ld(SK.hc)||[];CONS=ld(SK.cons)||[];INC=ld(SK.inc)||[];CITAS=ld(SK.citas)||[];
   syncAll();
+  setTimeout(()=>renderCaptura(),200);
 }
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
@@ -1770,6 +1784,9 @@ function buildCapFormEnf(emp){
         <div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="f-if" class="auto" readonly></div>
       </div>
     </div>
+    <div style="margin-bottom:10px">
+      <button class="btn btn-gh" style="width:100%;padding:10px;border:1.5px dashed var(--rd);color:var(--rd);font-weight:700" onclick="abrirIncDesdeCaptura()">📋 + Agregar incapacidad a esta consulta</button>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn-nueva-consulta" onclick="guardarConsulta('ENF')">✅ Guardar nota de enfermería</button>
       <button class="btn btn-gh" onclick="imprimirConstancia()">🖨️</button>
@@ -1825,6 +1842,9 @@ function buildCapFormMed(emp){
         <div class="fi" style="margin:0"><label>Días</label><input type="number" id="f-ds" min="1" oninput="calcFin('f-ii','f-ds','f-if')"></div>
         <div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="f-if" class="auto" readonly></div>
       </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <button class="btn btn-gh" style="width:100%;padding:10px;border:1.5px dashed var(--rd);color:var(--rd);font-weight:700" onclick="abrirIncDesdeCaptura()">📋 + Agregar incapacidad a esta consulta</button>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn-nueva-consulta med" onclick="guardarConsulta('MED')">✅ Guardar valoración</button>
@@ -1905,6 +1925,36 @@ function buildCapFormNut(emp){
 
 // Override guardarConsulta to use _capEmp when in capture screen
 
+
+
+function abrirIncDesdeCaptura(){
+  // Pre-fill inc modal with current patient
+  const emp = _capEmp || _empActual;
+  if(!emp){toast('Selecciona un empleado primero','err');return;}
+  // Fill search field in inc modal
+  const q = document.getElementById('inc-eq');
+  if(q) q.value = emp.nombre + (emp.noEmp!=='EXT'?' (No.'+emp.noEmp+')':'');
+  const hidden = document.getElementById('inc-es');
+  if(hidden) hidden.value = emp.noEmp;
+  // Fill emp card
+  const card = document.getElementById('inc-ec');
+  if(card){
+    card.innerHTML = `<div class="ec" style="margin-bottom:10px">
+      <div class="ec-name">${emp.nombre} <span class="ec-tag">No. ${emp.noEmp}</span></div>
+      <div class="ec-grid">
+        <div class="ec-f"><label>Planta</label><span>${emp.planta||'—'}</span></div>
+        <div class="ec-f"><label>Depto</label><span>${emp.depto||'—'}</span></div>
+        <div class="ec-f"><label>NSS</label><span>${emp.nss||'—'}</span></div>
+      </div>
+    </div>`;
+    card.style.display='block';
+  }
+  // Set today's date
+  const hoy = new Date().toISOString().split('T')[0];
+  const iniEl = document.getElementById('inc-ii');
+  if(iniEl && !iniEl.value) iniEl.value = hoy;
+  openModal('mo-inc');
+}
 
 function registrarExterno(){
   const nombre=g('ext-nombre'),empresa=g('ext-empresa');
