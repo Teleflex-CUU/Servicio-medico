@@ -343,22 +343,95 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div><h2>Incapacidades</h2></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-gh btn-sm" onclick="syncInc()">🔄 Sync</button>
-      <button class="btn btn-tl btn-sm" onclick="openModal('mo-inc')">+ Nueva</button>
+      <button class="btn btn-tl btn-sm" onclick="openModal('mo-inc')">+ Nueva incapacidad</button>
     </div>
   </div>
+  <!-- KPIs -->
   <div class="kpis">
     <div class="kpi rd"><div class="kv" id="ki-act">0</div><div class="kl">Activas</div></div>
     <div class="kpi am"><div class="kv" id="ki-mes">0</div><div class="kl">Este mes</div></div>
-    <div class="kpi"><div class="kv" id="ki-dias">0</div><div class="kl">Días total</div></div>
+    <div class="kpi"><div class="kv" id="ki-dias">0</div><div class="kl">Días totales</div></div>
     <div class="kpi gr"><div class="kv" id="ki-prox">0</div><div class="kl">Próx. 7 días</div></div>
+    <div class="kpi" style="border-left:3px solid var(--pu)"><div class="kv" id="ki-prol" style="color:var(--pu)">0</div><div class="kl">Prolongadas +28d</div></div>
   </div>
-  <div class="fbar">
-    <div class="sw" style="flex:1;min-width:160px"><span class="si">🔍</span><input type="text" id="inc-q" placeholder="Empleado o diagnóstico..." oninput="renderInc()"></div>
-    <select id="inc-fp" onchange="renderInc()"><option value="">Todas las plantas</option><option>Américas</option><option>Barrancas</option><option>Cantera</option><option>Juventud</option></select>
-    <select id="inc-ft" onchange="renderInc()"><option value="">Todos los tipos</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option></select>
-    <select id="inc-fe" onchange="renderInc()"><option value="">Todos</option><option value="activa">Solo activas</option></select>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab on" id="inc-tab-lista" onclick="incTab('lista',this)">📋 Lista</button>
+    <button class="tab" id="inc-tab-reporte" onclick="incTab('reporte',this)">📊 Reporte</button>
   </div>
-  <div id="inc-lista"></div>
+  <!-- Panel Lista -->
+  <div id="inc-panel-lista">
+    <div class="fbar">
+      <div class="sw" style="flex:1;min-width:160px"><span class="si">🔍</span><input type="text" id="inc-q" placeholder="Empleado o diagnóstico..." oninput="renderInc()"></div>
+      <select id="inc-fp" onchange="renderInc()">
+        <option value="">Todas las plantas</option>
+        <option>Américas</option><option>Barrancas</option><option>Cantera</option><option>Juventud</option>
+      </select>
+      <select id="inc-ft" onchange="renderInc()">
+        <option value="">Todos los tipos</option>
+        <option value="trabajo">Accidente trabajo</option>
+        <option value="trayecto">Accidente trayecto</option>
+        <option value="general">Enfermedad general</option>
+        <option value="maternidad">Maternidad</option>
+      </select>
+      <select id="inc-fe" onchange="renderInc()">
+        <option value="">Todos</option>
+        <option value="activa">Solo activas</option>
+        <option value="prolongada">Prolongadas +28d</option>
+      </select>
+      <select id="inc-fturno" onchange="renderInc()">
+        <option value="">Todos los turnos</option>
+        <option>Matutino</option><option>Vespertino</option>
+      </select>
+    </div>
+    <div id="inc-lista"></div>
+  </div>
+  <!-- Panel Reporte -->
+  <div id="inc-panel-reporte" style="display:none">
+    <div class="fbar">
+      <select id="inc-r-anio" onchange="renderIncReporte()">
+      </select>
+      <select id="inc-r-per" onchange="onIncPeriodChange()">
+        <option value="anio">Por año</option>
+        <option value="mes">Por mes</option>
+        <option value="semana">Por semana</option>
+      </select>
+      <select id="inc-r-mes" onchange="renderIncReporte()" style="display:none">
+        <option value="">Todos los meses</option>
+      </select>
+      <input type="number" id="inc-r-sem" placeholder="No. semana" min="1" max="53" onchange="renderIncReporte()" style="display:none;width:110px;padding:6px 10px;border:1.5px solid var(--bor);border-radius:7px;font-size:12px;font-family:inherit;outline:none">
+      <select id="inc-r-planta" onchange="renderIncReporte()">
+        <option value="">Todas las plantas</option>
+        <option>Américas</option><option>Barrancas</option><option>Cantera</option><option>Juventud</option>
+      </select>
+      <select id="inc-r-turno" onchange="renderIncReporte()">
+        <option value="">Todos los turnos</option>
+        <option>Matutino</option><option>Vespertino</option>
+      </select>
+    </div>
+    <!-- Reporte KPIs -->
+    <div class="kpis" style="margin-bottom:14px">
+      <div class="kpi rd"><div class="kv" id="rki-total">0</div><div class="kl">Total incap.</div></div>
+      <div class="kpi am"><div class="kv" id="rki-dias">0</div><div class="kl">Días totales</div></div>
+      <div class="kpi"><div class="kv" id="rki-trabajo">0</div><div class="kl">Acc. trabajo</div></div>
+      <div class="kpi"><div class="kv" id="rki-general">0</div><div class="kl">Enf. general</div></div>
+      <div class="kpi" style="border-left:3px solid #F0ABFC"><div class="kv" id="rki-maternidad" style="color:#A21CAF">0</div><div class="kl">Maternidad</div></div>
+    </div>
+    <!-- Gráficas -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px" id="inc-chart-title">Incapacidades por período</div><div class="cw"><canvas id="inc-ch-main"></canvas></div></div>
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por tipo</div><div class="cw"><canvas id="inc-ch-tipo"></canvas></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por planta</div><div class="cw"><canvas id="inc-ch-planta"></canvas></div></div>
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por turno</div><div class="cw"><canvas id="inc-ch-turno"></canvas></div></div>
+    </div>
+    <!-- Top diagnósticos -->
+    <div class="card cp">
+      <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Top diagnósticos</div>
+      <div id="inc-top-dx"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ CITAS ═══ -->
@@ -592,7 +665,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 // ════════════════════════════════════════════════════════════════
 // AUNA SALUD OCUPACIONAL — TELEFLEX v2
 // ════════════════════════════════════════════════════════════════
-const GAS='https://script.google.com/macros/s/1ttZavXzv_pnO1BYj4QDLb7o1RWCKD8Bppfg9L8NwxmOx5U6ePJz_YWjq/exec';
+const GAS='https://script.google.com/macros/s/TU_GAS_URL_AQUI/exec';
 const SK={hc:'au_hc1',cons:'au_cons1',inc:'au_inc1',citas:'au_cit1',usr:'au_usr1'};
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MSC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -1141,30 +1214,66 @@ function incActivaCheck(r){
   if(r.incDias){const f=new Date(d);f.setDate(d.getDate()+(parseInt(r.incDias)||1)-1);return f>=hoy;}
   return false;
 }
+function incTab(tab,btn){document.querySelectorAll('#sc-inc .tab').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');document.getElementById('inc-panel-lista').style.display=tab==='lista'?'block':'none';document.getElementById('inc-panel-reporte').style.display=tab==='reporte'?'block':'none';if(tab==='reporte')renderIncReporte();}
+function onIncPeriodChange(){const per=g('inc-r-per');const me=document.getElementById('inc-r-mes');const se=document.getElementById('inc-r-sem');if(me)me.style.display=per==='mes'?'':'none';if(se)se.style.display=per==='semana'?'':'none';renderIncReporte();}
+function initIncReporte(){const yr=document.getElementById('inc-r-anio');if(!yr)return;const y=new Date().getFullYear();yr.innerHTML=[y,y-1,y-2].map(x=>`<option value="${x}"${x===y?' selected':''}>${x}</option>`).join('');const ms=document.getElementById('inc-r-mes');if(ms)ms.innerHTML='<option value="">Todos</option>'+["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');}
+function renderIncReporte(){initIncReporte();const anio=parseInt(g('inc-r-anio'))||new Date().getFullYear();const per=g('inc-r-per');const planta=g('inc-r-planta');const turno=g('inc-r-turno');const mes=per==='mes'?parseInt(g('inc-r-mes'))||0:0;const semana=per==='semana'?parseInt(g('inc-r-sem'))||0:0;let data=[...INC].filter(r=>{const d=r.incInicio||r.fecha;if(!d)return false;const dt=new Date(String(d).includes('/')?d.split('/').reverse().join('-'):d);return dt.getFullYear()===anio;});if(planta)data=data.filter(r=>r.planta===planta);if(turno)data=data.filter(r=>r.turno===turno);if(mes)data=data.filter(r=>{const d=new Date(String(r.incInicio||r.fecha||'').includes('/')?String(r.incInicio||r.fecha||'').split('/').reverse().join('-'):String(r.incInicio||r.fecha||''));return d.getMonth()===mes-1;});if(semana)data=data.filter(r=>getWeek(new Date(String(r.incInicio||r.fecha||'').includes('/')?String(r.incInicio||r.fecha||'').split('/').reverse().join('-'):String(r.incInicio||r.fecha||'')))===semana);
+// KPIs
+const dias=data.reduce((s,r)=>s+(parseInt(r.incDias)||0),0);
+const trabajo=data.filter(r=>(r.tipo||'').toLowerCase().includes('trabajo')).length;
+const general=data.filter(r=>(r.tipo||'').toLowerCase().includes('general')).length;
+const maternidad=data.filter(r=>(r.tipo||'').toLowerCase().includes('maternidad')).length;
+['rki-total','rki-dias','rki-trabajo','rki-general','rki-maternidad'].forEach((id,i)=>{const e=document.getElementById(id);if(e)e.textContent=[data.length,dias,trabajo,general,maternidad][i];});
+// Gráfica principal
+const ct=document.getElementById('inc-chart-title');if(ct)ct.textContent=per==='mes'?'Por día':per==='semana'?'Por semana':'Por mes';
+if(window._incCharts){Object.values(window._incCharts).forEach(c=>{try{c.destroy();}catch(e){}});}
+window._incCharts={};
+const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const ctxM=document.getElementById('inc-ch-main');
+if(ctxM){const byMes=Array(12).fill(0);data.forEach(r=>{const d=new Date(String(r.incInicio||r.fecha||'').includes('/')?String(r.incInicio||r.fecha||'').split('/').reverse().join('-'):String(r.incInicio||r.fecha||''));if(d&&!isNaN(d))byMes[d.getMonth()]++;});window._incCharts.main=new Chart(ctxM,{type:'bar',data:{labels:meses,datasets:[{label:'Incapacidades',data:byMes,backgroundColor:'rgba(220,38,38,.65)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});}
+const tipos=['Trabajo','Trayecto','General','Maternidad'];
+const tipoCnt=[data.filter(r=>(r.tipo||'').toLowerCase().includes('trabajo')).length,data.filter(r=>(r.tipo||'').toLowerCase().includes('trayecto')).length,data.filter(r=>(r.tipo||'').toLowerCase().includes('general')).length,data.filter(r=>(r.tipo||'').toLowerCase().includes('maternidad')).length];
+const ctxT=document.getElementById('inc-ch-tipo');
+if(ctxT)window._incCharts.tipo=new Chart(ctxT,{type:'doughnut',data:{labels:tipos,datasets:[{data:tipoCnt,backgroundColor:['#DC2626','#F59E0B','#2563EB','#A21CAF'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}}}});
+const pCnt=PLANTAS.map(p=>data.filter(r=>r.planta===p).length);
+const ctxP=document.getElementById('inc-ch-planta');
+if(ctxP)window._incCharts.planta=new Chart(ctxP,{type:'bar',data:{labels:PLANTAS,datasets:[{data:pCnt,backgroundColor:'rgba(220,38,38,.55)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+const tCnt={'Matutino':data.filter(r=>r.turno==='Matutino').length,'Vespertino':data.filter(r=>r.turno==='Vespertino').length};
+const ctxTu=document.getElementById('inc-ch-turno');
+if(ctxTu)window._incCharts.turno=new Chart(ctxTu,{type:'bar',data:{labels:['Matutino','Vespertino'],datasets:[{data:[tCnt.Matutino,tCnt.Vespertino],backgroundColor:['rgba(29,63,138,.7)','rgba(184,150,46,.7)'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+const dxCnt={};data.forEach(r=>{if(r.diagnostico)dxCnt[r.diagnostico]=(dxCnt[r.diagnostico]||0)+1;});const dxArr=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]).slice(0,8);const dxEl=document.getElementById('inc-top-dx');if(dxEl)dxEl.innerHTML=dxArr.map(([k,v])=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bor);font-size:12px"><div style="flex:1;font-weight:600">${k}</div><div style="background:var(--rd3);border-radius:4px;height:6px;width:60px;overflow:hidden"><div style="height:100%;background:var(--rd);border-radius:4px;width:${Math.round(v/dxArr[0][1]*100)}%"></div></div><div style="font-size:11px;font-weight:700;min-width:18px;text-align:right">${v}</div></div>`).join('')||'<div style="color:var(--tx3);font-size:12px;padding:10px">Sin datos</div>';}
+
 function renderInc(){
   const q=(document.getElementById('inc-q')||{}).value.toLowerCase()||'';
   const fp=(document.getElementById('inc-fp')||{}).value||'';
   const ft=(document.getElementById('inc-ft')||{}).value||'';
   const fe=(document.getElementById('inc-fe')||{}).value||'';
+  const fturno=(document.getElementById('inc-fturno')||{}).value||'';
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const mes=hoy.getMonth(),anio=hoy.getFullYear();
   const act=INC.filter(r=>incActivaCheck(r));
   const esteMes=INC.filter(r=>{const d=r.incInicio||r.fecha;if(!d)return false;const dt=new Date(String(d).includes('/')?d.split('/').reverse().join('-'):d);return dt.getMonth()===mes&&dt.getFullYear()===anio;});
   const dias=INC.reduce((s,r)=>s+(parseInt(r.incDias)||0),0);
   const prox7=act.filter(r=>{const ini=r.incInicio;if(!ini)return false;const d=new Date(String(ini).includes('/')?ini.split('/').reverse().join('-')+'T12:00':ini+'T12:00');const f=new Date(d);f.setDate(d.getDate()+(parseInt(r.incDias)||1)-1);return Math.round((f-hoy)/(1000*60*60*24))<=7;});
+  const prolongadas=INC.filter(r=>(parseInt(r.incDias)||0)>=28);
+  const kiProl=document.getElementById('ki-prol');if(kiProl)kiProl.textContent=prolongadas.length;
   ['ki-act','ki-mes','ki-dias','ki-prox'].forEach((id,i)=>{const e=document.getElementById(id);if(e)e.textContent=[act.length,esteMes.length,dias,prox7.length][i];});
   let lista=[...INC];
   if(q)lista=lista.filter(r=>(String(r.nombre||'')+String(r.noEmp||'')+String(r.diagnostico||'')).toLowerCase().includes(q));
   if(fp)lista=lista.filter(r=>(r.planta||'')===fp);
   if(ft)lista=lista.filter(r=>(r.tipo||r.incapacidad||'').toLowerCase().includes(ft.toLowerCase()));
-  if(fe==='activa')lista=lista.filter(r=>incActivaCheck(r));
+  if(fe==='activa') lista=lista.filter(r=>incActivaCheck(r));
+  if(fe==='prolongada') lista=lista.filter(r=>(parseInt(r.incDias)||0)>=28);
+  if(fturno) lista=lista.filter(r=>(r.turno||'')===fturno);
+  if(ft) lista=lista.filter(r=>(r.tipo||r.incapacidad||'').toLowerCase().includes(ft));
   lista.sort((a,b)=>String(b.incInicio||b.fecha||'').localeCompare(String(a.incInicio||a.fecha||'')));
   const el=document.getElementById('inc-lista');if(!el)return;
   if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">📋</div>'+(INC.length?'Sin resultados':'Sin incapacidades. Usa 🔄 Sync.')+'</div>';return;}
   el.innerHTML=lista.map(r=>{
     const activa=incActivaCheck(r);
     const tipo=r.tipo||r.incapacidad||'—';
-    const tc=tipo.includes('trabajo')?'prd':tipo==='Maternidad'?'ppu':tipo.includes('trayecto')?'pam':'pbl';
+    const tc=tipo.toLowerCase().includes('trabajo')?'prd':tipo.toLowerCase().includes('maternidad')?'ppu':tipo.toLowerCase().includes('trayecto')?'pam':'pbl';
+    const esProlongada=(parseInt(r.incDias)||0)>=28;
     return`<div class="card cp" style="margin-bottom:8px;border-left:3px solid ${activa?'var(--gr)':'var(--bor2)'}">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div style="flex:1">
@@ -1380,6 +1489,8 @@ function selEmpModal(noEmp,inputId,dropId,hiddenId){
   const card=document.getElementById(cardId);
   if(card){card.innerHTML=`<div class="ec" style="margin-bottom:10px"><div class="ec-name">${emp.nombre} <span class="ec-tag">No. ${emp.noEmp}</span></div><div class="ec-grid"><div class="ec-f"><label>Planta</label><span>${emp.planta||'—'}</span></div><div class="ec-f"><label>Depto</label><span>${emp.depto||'—'}</span></div><div class="ec-f"><label>NSS</label><span>${emp.nss||'—'}</span></div></div></div>`;card.style.display='block';}
   if(hiddenId==='cit-es') sugFechaCita();
+  // For inc modal - show planta/depto info
+  if(hiddenId==='inc-es'){const empI=HC.find(x=>String(x.noEmp)===String(noEmp));if(empI){const turnoEl=document.getElementById('inc-turno-val');if(turnoEl)turnoEl.textContent=empI.turno||'—';}}
 }
 
 // ════════════════════════════════════════════════════════════════
