@@ -13,16 +13,16 @@
            1. SISTEMA DE COLORES
            ============================================================ */
         :root {
-            --primary-bg: #0d4444; /* Verde oscuro del gradiente */
-            --secondary-bg: #1a3a5c; /* Azul oscuro del gradiente */
-            --btn-green: #3a8076;    /* El verde del botón en tu imagen */
-            --nv: #0F2942;           /* Azul Teleflex */
+            --primary-bg: #0d4444;    /* Verde oscuro del gradiente */
+            --secondary-bg: #1a3a5c;  /* Azul oscuro del gradiente */
+            --btn-green: #3a8076;     /* Verde del botón */
+            --nv: #0F2942;            /* Azul Marino Teleflex */
             --tx: #0F172A;
             --tx2: #64748B;
-            --nh: 85px;              /* Altura del menú */
+            --nh: 75px;               /* Altura del menú */
         }
 
-        /* Colores de fondo por Rol (se aplican después del login) */
+        /* Colores de fondo por Rol */
         .bg-medico { background-color: #F1F5F9 !important; background-image: none !important; }
         .bg-enfermeria { background-color: #E0F2FE !important; background-image: none !important; }
         .bg-nutricion { background-color: #DCFCE7 !important; background-image: none !important; }
@@ -39,7 +39,22 @@
         }
 
         /* ============================================================
-           2. LOGIN (IGUAL A TU IMAGEN)
+           2. ESTILOS DE LOGOS
+           ============================================================ */
+        .logo-login {
+            height: 50px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+        .nav-logo-img {
+            height: 35px;
+            object-fit: contain;
+            filter: brightness(0) invert(1); /* Convierte el logo a blanco */
+            opacity: 0.9;
+        }
+
+        /* ============================================================
+           3. LOGIN (ESTILO IMAGEN)
            ============================================================ */
         #login-screen {
             position: fixed; inset: 0; z-index: 2000;
@@ -54,19 +69,10 @@
             box-shadow: 0 30px 60px rgba(0,0,0,0.5);
             text-align: center;
         }
-        .login-icon {
-            background: var(--btn-green);
-            width: 60px; height: 60px;
-            margin: 0 auto 15px;
-            border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 24px;
-            box-shadow: 0 8px 15px rgba(58, 128, 118, 0.3);
-        }
-        .login-card h2 { color: var(--nv); font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .login-card h2 { color: var(--nv); font-size: 22px; font-weight: 800; margin-bottom: 5px; }
         .login-card p { color: var(--tx2); font-size: 13px; margin-bottom: 30px; }
         
-        .login-card .fi { text-align: left; }
+        .login-card .fi { text-align: left; margin-bottom: 20px; }
         .login-card label { 
             display: block; font-size: 10px; font-weight: 800; 
             color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px;
@@ -74,7 +80,7 @@
         .login-card select {
             width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; 
             border-radius: 12px; font-size: 14px; outline: none;
-            appearance: none; background: url("data:image/svg+xml,...") no-repeat right 15px center;
+            background-color: #fff;
         }
 
         .btn-login {
@@ -86,7 +92,7 @@
         .btn-login:hover { opacity: 0.9; transform: translateY(-2px); }
 
         /* ============================================================
-           3. NAVEGACIÓN Y PANTALLAS
+           4. NAVEGACIÓN Y PANTALLAS
            ============================================================ */
         #app { display: none; }
         .nav {
@@ -94,11 +100,10 @@
             z-index: 1000; background: var(--nv); display: flex; align-items: center;
             padding: 0 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .nav-brand { color: white; font-weight: 800; font-size: 20px; }
         .nav-tabs { display: flex; gap: 5px; margin-left: 30px; }
         .tb {
             background: none; border: none; color: rgba(255,255,255,0.6);
-            font-size: 15px; font-weight: 600; cursor: pointer;
+            font-size: 14px; font-weight: 600; cursor: pointer;
             padding: 10px 15px; border-radius: 8px; transition: 0.2s;
         }
         .tb.on { color: white; background: rgba(255,255,255,0.1); }
@@ -110,15 +115,17 @@
         }
         .sc.on { display: block; }
 
-        .card { background: white; border-radius: 20px; padding: 30px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 5px 20px rgba(0,0,0,0.02); }
+        .card { background: white; border-radius: 20px; padding: 35px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 5px 20px rgba(0,0,0,0.02); }
     </style>
 </head>
 <body>
 
-<!-- PANTALLA DE LOGIN (ESTILO IMAGEN) -->
+<!-- PANTALLA DE LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-icon">🩺</div>
+    <!-- Logo Teleflex Oficial -->
+    <img src="https://companieslogo.com/img/orig/TFX-650c3fb4.png?t=1720244494" alt="Teleflex Logo" class="logo-login">
+    
     <h2>Teleflex SO</h2>
     <p>Módulo Unificado — Salud Ocupacional</p>
     
@@ -136,22 +143,27 @@
 <!-- APP PRINCIPAL -->
 <div id="app">
   <nav class="nav">
-    <div class="nav-brand">Teleflex SO</div>
+    <!-- Logo Teleflex en Navbar (en blanco) -->
+    <img src="https://companieslogo.com/img/orig/TFX-650c3fb4.png?t=1720244494" alt="Teleflex" class="nav-logo-img">
+    
     <div class="nav-tabs" id="nav-tabs"></div>
-    <div id="user-info" style="margin-left:auto; color:white; font-size:14px;"></div>
+    <div id="user-info" style="margin-left:auto; color:white; font-size:13px; font-weight:600;"></div>
   </nav>
 
+  <!-- PANTALLA INICIAL DESPUÉS DE LOGIN -->
   <div class="sc on" id="sc-inicio">
     <div class="card">
         <h2 id="title-modulo">Bienvenido</h2>
-        <p style="color:var(--tx2)">Selecciona una opción del menú para comenzar.</p>
+        <p style="color:var(--tx2); margin-top: 10px;">Busca un empleado o selecciona una opción del menú para comenzar.</p>
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
+        <p style="font-size: 14px; color: var(--tx2);">Fase 1: Interfaz de usuario con branding oficial integrada.</p>
     </div>
   </div>
   
   <div class="sc" id="sc-captura">
       <div class="card">
           <h2>Módulo de Captura</h2>
-          <p>Aquí se diseñarán los formularios en la siguiente fase.</p>
+          <p>Los formularios se activarán en la Fase 3.</p>
       </div>
   </div>
 </div>
@@ -176,14 +188,14 @@ function doLogin() {
   
   const user = JSON.parse(val);
   
-  // 1. Cambiar fondo según rol
+  // Cambiar fondo según rol
   document.body.className = ''; 
   document.body.classList.add('bg-' + user.rol);
 
-  // 2. Mostrar App
+  // Mostrar App
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('user-info').textContent = user.nombre;
+  document.getElementById('user-info').textContent = user.nombre.toUpperCase();
   document.getElementById('title-modulo').textContent = "Módulo " + user.rol.charAt(0).toUpperCase() + user.rol.slice(1);
   
   renderMenu();
@@ -191,8 +203,8 @@ function doLogin() {
 
 function renderMenu() {
   const tabs = [
-    { id: 'inicio', label: '🏠 Inicio' },
-    { id: 'captura', label: '📝 Captura' }
+    { id: 'inicio', label: '🔍 Expediente' },
+    { id: 'captura', label: '📝 Nueva Consulta' }
   ];
   document.getElementById('nav-tabs').innerHTML = tabs.map(t => 
     `<button class="tb" id="tb-${t.id}" onclick="go('${t.id}')">${t.label}</button>`
@@ -202,9 +214,12 @@ function renderMenu() {
 
 function go(id) {
   document.querySelectorAll('.sc').forEach(s => s.classList.remove('on'));
-  document.getElementById('sc-' + id).classList.add('on');
+  const sc = document.getElementById('sc-' + id);
+  if (sc) sc.classList.add('on');
+  
   document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
-  document.getElementById('tb-' + id).classList.add('on');
+  const tb = document.getElementById('tb-' + id);
+  if (tb) tb.classList.add('on');
 }
 </script>
 </body>
