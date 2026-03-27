@@ -62,13 +62,13 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .tb:hover{color:#fff;background:rgba(255,255,255,.1)}
 .tb.on{color:#fff;background:rgba(184,150,46,.3);border-bottom:2px solid var(--gold)}
 .nav-end{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.nav-user{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.nav-user{font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 .dok{background:#22C55E}.derr{background:#EF4444}.dbusy{background:var(--gold);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:.15s}
+.nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
 .nav-btn:hover{background:rgba(255,255,255,.2)}
-.rol-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.rol-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
 .rb-med{background:var(--bl);color:#fff}.rb-enf{background:var(--tl);color:#fff}.rb-nut{background:var(--gr);color:#fff}
 
 /* ── SCREENS ── */
@@ -240,6 +240,29 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .imc-val{font-size:32px;font-weight:800;font-family:'JetBrains Mono',monospace;text-align:center}
 /* Edit timestamp */
 .edit-stamp{font-size:10px;color:var(--tx3);font-style:italic;margin-top:6px;text-align:right}
+
+
+/* ── VISUAL CAPTURE SECTIONS ── */
+.vsec{border-radius:10px;padding:14px;margin-bottom:14px}
+.vsec-enf{background:linear-gradient(135deg,rgba(13,107,94,.06),rgba(13,107,94,.02));border:1.5px solid rgba(13,107,94,.2)}
+.vsec-med{background:linear-gradient(135deg,rgba(29,63,138,.06),rgba(29,63,138,.02));border:1.5px solid rgba(29,63,138,.2)}
+.vsec-nut{background:linear-gradient(135deg,rgba(22,101,52,.06),rgba(22,101,52,.02));border:1.5px solid rgba(22,101,52,.2)}
+.vsec-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.vsec-title.enf{color:#0D6B5E}.vsec-title.med{color:#1D3F8A}.vsec-title.nut{color:#166534}
+.vsec-title::after{content:'';flex:1;height:1.5px;border-radius:2px}
+.vsec-title.enf::after{background:rgba(13,107,94,.2)}.vsec-title.med::after{background:rgba(29,63,138,.2)}.vsec-title.nut::after{background:rgba(22,101,52,.2)}
+/* Vital signs cards */
+.vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:4px}
+.vs-card{background:var(--sf);border:1.5px solid var(--bor);border-radius:10px;padding:10px 8px;text-align:center;transition:.15s}
+.vs-card:focus-within{border-color:var(--tl);box-shadow:0 0 0 3px var(--tl3)}
+.vs-card label{display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--tx3);margin-bottom:4px}
+.vs-card input{width:100%;border:none;outline:none;text-align:center;font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace;background:transparent;color:var(--nv)}
+.vs-card .vs-unit{font-size:9px;color:var(--tx3);margin-top:2px}
+/* CIE10 visual */
+.cie10-selected{display:flex;align-items:center;gap:8px;background:var(--tl3);border:1.5px solid var(--tl2);border-radius:8px;padding:8px 12px;margin-top:6px;display:none}
+.cie10-code{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;color:var(--tl)}
+/* Incap block */
+.inc-block-visual{background:linear-gradient(135deg,rgba(220,38,38,.05),rgba(220,38,38,.02));border:1.5px solid rgba(220,38,38,.3);border-radius:10px;padding:14px;margin-bottom:12px}
 
 </style>
 </head>
@@ -514,15 +537,20 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <div class="sh2">
     <div><h2>Head Count</h2><p id="hc-cnt">0 empleados</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-gh btn-sm" id="btn-del-hc" style="display:none" onclick="delHC()">🗑️</button>
-      <button class="btn btn-gh btn-sm" onclick="syncHC()">🔄 Sync GAS</button>
-      <label class="btn btn-nv btn-sm" style="cursor:pointer">📂 Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarHC(this)"></label>
+      <button class="btn btn-gh btn-sm" id="btn-del-hc" style="display:none" onclick="delHC()">🗑️ Limpiar</button>
+      <button class="btn btn-nv btn-sm" onclick="syncHC()" style="background:linear-gradient(135deg,#0F2942,#0D6B5E)">🔄 Sync desde GAS</button>
+      <label class="btn btn-sm" style="cursor:pointer;background:linear-gradient(135deg,#166534,#15803D);color:#fff">📂 Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarHC(this)"></label>
     </div>
   </div>
-  <div id="hc-upload" style="border:2px dashed var(--bor2);border-radius:var(--r);padding:40px;text-align:center;color:var(--tx3);margin-bottom:14px">
-    <div style="font-size:32px;margin-bottom:8px">📂</div>
-    <div style="font-weight:600;margin-bottom:4px">Arrastra un Excel o usa el botón de arriba</div>
-    <div style="font-size:11px">Columnas: Número, Nombre, Departamento, Puesto, Categoría, NSS, Planta, Género, Ingreso, Nacimiento, Edad, Teléfono</div>
+  <div id="hc-upload" style="border:2px dashed var(--bor2);border-radius:14px;padding:50px 40px;text-align:center;color:var(--tx3);margin-bottom:14px;background:var(--sf)">
+    <div style="font-size:48px;margin-bottom:12px">📋</div>
+    <div style="font-weight:800;font-size:16px;color:var(--nv);margin-bottom:6px">Sin Head Count cargado</div>
+    <div style="font-size:13px;margin-bottom:20px;color:var(--tx2)">Carga el Excel de empleados o sincroniza desde Google Sheets</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-nv" onclick="syncHC()" style="background:linear-gradient(135deg,#0F2942,#0D6B5E)">🔄 Sync desde GAS</button>
+      <label class="btn" style="cursor:pointer;background:linear-gradient(135deg,#166534,#15803D);color:#fff">📂 Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarHC(this)"></label>
+    </div>
+    <div style="font-size:11px;margin-top:16px;color:var(--tx3)">Columnas esperadas: Número · Nombre · Departamento · Puesto · Categoría · NSS · Planta · Género · Ingreso · Nacimiento · Edad · Teléfono</div>
   </div>
   <div id="hc-table" style="display:none">
     <div class="fbar">
@@ -1801,61 +1829,76 @@ function buildCapFormMed(emp){
   const apHtml=APS.map(ap=>{const id='ap-'+ap.replace(/\s+/g,'-');return`<div class="ap-item" data-ap="${ap}"><label>${ap}</label><select id="${id}-r" onchange="this.closest('.ap-item').classList.toggle('anormal',this.value==='Anormal')"><option>Normal</option><option>Anormal</option><option>No explorado</option></select><input type="text" id="${id}-n" placeholder="Hallazgos..."></div>`;}).join('');
   return`<div class="cap-form med">
     <div class="cap-title med">👨‍⚕️ Valoración Médica</div>
-    <div class="g2">
-      <div class="fi" style="margin:0"><label>Tipo</label>
-        <select id="f-tipo"><option>Consulta general</option><option>Riesgo de trabajo</option><option>Control crónico</option><option>Seguimiento</option><option>Urgencia</option><option>Examen médico</option></select></div>
-      <div class="fi" style="margin:0"><label>Motivo</label><input type="text" id="f-motivo" placeholder="Motivo de consulta..."></div>
+    <!-- Info general -->
+    <div class="vsec vsec-med">
+      <div class="vsec-title med">📋 Motivo de consulta</div>
+      <div class="g2">
+        <div class="fi" style="margin:0"><label>Tipo</label>
+          <select id="f-tipo"><option>Consulta general</option><option>Riesgo de trabajo</option><option>Control crónico</option><option>Seguimiento</option><option>Urgencia</option><option>Examen médico</option></select></div>
+        <div class="fi" style="margin:0"><label>Motivo</label><input type="text" id="f-motivo" placeholder="Motivo principal de la consulta..."></div>
+      </div>
+      ${al?`<div class="alerta-alergia" style="margin-top:10px">⚠️ ALERGIAS: ${al}</div>`:''}
     </div>
-    ${al?`<div class="alerta-alergia">⚠️ ALERGIAS: ${al}</div>`:''}
-    <div class="sec-t" style="margin-top:8px">Signos vitales</div>
-    <div class="g4">
-      <div class="fi" style="margin:0"><label>T/A</label><input type="text" id="f-ta" placeholder="120/80"></div>
-      <div class="fi" style="margin:0"><label>FC</label><input type="number" id="f-fc"></div>
-      <div class="fi" style="margin:0"><label>FR</label><input type="number" id="f-fr"></div>
-      <div class="fi" style="margin:0"><label>Temp °C</label><input type="number" step=".1" id="f-temp"></div>
-      <div class="fi" style="margin:0"><label>Peso kg</label><input type="number" step=".1" id="f-peso" oninput="calcIMCf()"></div>
-      <div class="fi" style="margin:0"><label>Talla cm</label><input type="number" id="f-talla" oninput="calcIMCf()"></div>
-      <div class="fi" style="margin:0"><label>SpO₂ %</label><input type="number" id="f-spo2"></div>
-      <div class="fi" style="margin:0"><label>Glucosa</label><input type="number" id="f-gluc"></div>
+    <!-- Signos vitales -->
+    <div class="vsec vsec-med">
+      <div class="vsec-title med">💓 Signos vitales y antropometría</div>
+      <div class="vs-grid">
+        <div class="vs-card"><label>T/A</label><input type="text" id="f-ta" placeholder="120/80"><div class="vs-unit">mmHg</div></div>
+        <div class="vs-card"><label>FC</label><input type="number" id="f-fc" placeholder="72"><div class="vs-unit">lpm</div></div>
+        <div class="vs-card"><label>FR</label><input type="number" id="f-fr" placeholder="16"><div class="vs-unit">rpm</div></div>
+        <div class="vs-card"><label>Temp</label><input type="number" step=".1" id="f-temp" placeholder="36.5"><div class="vs-unit">°C</div></div>
+        <div class="vs-card"><label>Peso</label><input type="number" step=".1" id="f-peso" placeholder="70" oninput="calcIMCf()"><div class="vs-unit">kg</div></div>
+        <div class="vs-card"><label>Talla</label><input type="number" id="f-talla" placeholder="165" oninput="calcIMCf()"><div class="vs-unit">cm</div></div>
+        <div class="vs-card"><label>SpO₂</label><input type="number" id="f-spo2" placeholder="98"><div class="vs-unit">%</div></div>
+        <div class="vs-card"><label>Glucosa</label><input type="number" id="f-gluc" placeholder="90"><div class="vs-unit">mg/dL</div></div>
+      </div>
+      <div class="fi" style="margin-top:8px"><label>IMC (automático)</label><input type="text" id="f-imc" readonly class="auto" placeholder="Se calcula al ingresar peso y talla"></div>
     </div>
-    <div class="fi"><label>IMC (auto)</label><input type="text" id="f-imc" readonly class="auto"></div>
-    <div class="sec-t">Exploración por aparatos y sistemas</div>
-    <div class="ap-grid">${apHtml}</div>
-    <div class="fi"><label>CIE-10 / Diagnóstico *</label>
-      <div style="position:relative"><input type="text" id="f-cq" placeholder="Busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div>
-      <input type="hidden" id="f-cv"></div>
-    <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg"></div>
-    <div class="g2">
-      <div class="fi" style="margin:0"><label>Alergias</label><input type="text" id="f-al" value="${esc(al)}" placeholder="Penicilina, látex..."></div>
-      <div class="fi" style="margin:0"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
+    <!-- Exploración -->
+    <div class="vsec vsec-med">
+      <div class="vsec-title med">🔬 Exploración por aparatos y sistemas</div>
+      <div class="ap-grid">${apHtml}</div>
     </div>
-    <div class="fi"><label>Plan y tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, dosis, indicaciones..."></textarea></div>
-    <div class="g2">
-      <div class="fi" style="margin:0"><label>Seguimiento</label>
-        <select id="f-seg"><option>Alta</option><option>Seguimiento 24h</option><option>Seguimiento 48h</option><option>Referencia IMSS</option><option>Reposo en casa</option></select></div>
-      <div class="fi" style="margin:0"><label>Incapacidad</label>
-        <select id="f-incap" onchange="toggleIncBlock()"><option value="No">No</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option></select></div>
-    </div>
-    <div id="inc-block" style="display:none;background:var(--rd2);border-radius:8px;padding:10px;margin-bottom:10px">
-      <div class="g3">
-        <div class="fi" style="margin:0"><label>Fecha inicio</label><input type="date" id="f-ii" oninput="calcFin('f-ii','f-ds','f-if')"></div>
-        <div class="fi" style="margin:0"><label>Días</label><input type="number" id="f-ds" min="1" oninput="calcFin('f-ii','f-ds','f-if')"></div>
-        <div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="f-if" class="auto" readonly></div>
+    <!-- Diagnóstico -->
+    <div class="vsec vsec-med">
+      <div class="vsec-title med">🩺 Diagnóstico</div>
+      <div class="fi"><label>Buscar CIE-10 *</label>
+        <div style="position:relative"><input type="text" id="f-cq" placeholder="Código o descripción, ej: M54.5 o lumbago..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div>
+        <input type="hidden" id="f-cv"></div>
+      <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg" placeholder="Descripción diagnóstica..."></div>
+      <div class="g2">
+        <div class="fi" style="margin:0"><label>Alergias</label><input type="text" id="f-al" value="${esc(al)}" placeholder="Penicilina, látex..."></div>
+        <div class="fi" style="margin:0"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
       </div>
     </div>
-    <div style="margin-bottom:10px">
-      <button class="btn btn-gh" style="width:100%;padding:10px;border:1.5px dashed var(--rd);color:var(--rd);font-weight:700" onclick="abrirIncDesdeCaptura()">📋 + Agregar incapacidad a esta consulta</button>
+    <!-- Plan -->
+    <div class="vsec vsec-med">
+      <div class="vsec-title med">💊 Plan y tratamiento</div>
+      <div class="fi"><label>Tratamiento / Indicaciones</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, dosis, indicaciones, referencias..."></textarea></div>
+      <div class="g2">
+        <div class="fi" style="margin:0"><label>Seguimiento</label>
+          <select id="f-seg"><option>Alta</option><option>Seguimiento 24h</option><option>Seguimiento 48h</option><option>Referencia IMSS</option><option>Reposo en casa</option></select></div>
+        <div class="fi" style="margin:0"><label>Incapacidad</label>
+          <select id="f-incap" onchange="toggleIncBlock()"><option value="No">No</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option></select></div>
+      </div>
+      <div id="inc-block" style="display:none" class="inc-block-visual">
+        <div style="font-size:11px;font-weight:700;color:var(--rd);margin-bottom:8px">📋 Datos de incapacidad</div>
+        <div class="g3">
+          <div class="fi" style="margin:0"><label>Fecha inicio</label><input type="date" id="f-ii" oninput="calcFin('f-ii','f-ds','f-if')"></div>
+          <div class="fi" style="margin:0"><label>Días</label><input type="number" id="f-ds" min="1" oninput="calcFin('f-ii','f-ds','f-if')"></div>
+          <div class="fi" style="margin:0"><label>Fecha retorno (auto)</label><input type="date" id="f-if" class="auto" readonly></div>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-nueva-consulta med" onclick="guardarConsulta('MED')">✅ Guardar valoración</button>
-      <button class="btn btn-gh" onclick="imprimirNotaMed()">📄 Nota</button>
-      <button class="btn btn-gh" onclick="imprimirReceta()">💊 Receta</button>
-      <button class="btn btn-gh" onclick="imprimirST7()">📑 ST-7</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-nueva-consulta med" style="flex:1" onclick="guardarConsulta('MED')">✅ Guardar valoración</button>
+      <button class="btn btn-gh" onclick="abrirIncDesdeCaptura()" title="Incapacidad">📋</button>
+      <button class="btn btn-gh" onclick="imprimirNotaMed()" title="Nota médica">📄</button>
+      <button class="btn btn-gh" onclick="imprimirReceta()" title="Receta">💊</button>
+      <button class="btn btn-gh" onclick="imprimirST7()" title="ST-7">📑</button>
     </div>
-  </div>`;
-}
+  </div>`;}
 
-// ── FORMULARIO NUTRIOLOGÍA ─────────────────────────────────────
 function buildCapFormNut(emp){
   const cr=getCronicos(emp.noEmp);
   return`<div class="cap-form nut">
