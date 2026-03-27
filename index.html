@@ -458,6 +458,71 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   </div>
 </div>
 
+
+<!-- ═══ SEGUIMIENTO NUTRICIÓN ═══ -->
+<div class="sc" id="sc-nutseg">
+  <div class="sh2">
+    <div><h2>Seguimiento Nutricional</h2><p>Evolución y comparativa de valoraciones</p></div>
+    <button class="btn btn-gh btn-sm" onclick="syncAll()">🔄 Sync</button>
+  </div>
+  <!-- Buscador -->
+  <div class="card cp" style="margin-bottom:14px">
+    <div class="sec-t">🔍 Buscar paciente</div>
+    <div class="sw">
+      <span class="si">🔍</span>
+      <input type="text" id="nsg-q" placeholder="No. empleado o nombre..." oninput="buscarNutSeg(this.value)" autocomplete="off">
+      <div class="sd" id="nsg-drop"></div>
+    </div>
+  </div>
+  <!-- Panel del paciente -->
+  <div id="nsg-panel" style="display:none">
+    <!-- Header del paciente -->
+    <div id="nsg-header" style="margin-bottom:12px"></div>
+    <!-- Tabs de contenido -->
+    <div class="tabs">
+      <button class="tab on" onclick="nsgTab('evolucion',this)">📈 Evolución</button>
+      <button class="tab" onclick="nsgTab('composicion',this)">🧬 Composición corporal</button>
+      <button class="tab" onclick="nsgTab('historial',this)">📋 Historial consultas</button>
+    </div>
+    <!-- Evolución -->
+    <div id="nsg-evolucion">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="card cp">
+          <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">⚖️ Peso e IMC</div>
+          <div class="cw"><canvas id="nsg-ch-peso"></canvas></div>
+        </div>
+        <div class="card cp">
+          <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🔥 Calorías del plan</div>
+          <div class="cw"><canvas id="nsg-ch-kcal"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <!-- Composición corporal -->
+    <div id="nsg-composicion" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="card cp">
+          <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🧬 % Grasa y % Agua</div>
+          <div class="cw"><canvas id="nsg-ch-grasa"></canvas></div>
+        </div>
+        <div class="card cp">
+          <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">💪 Masa magra vs esperada</div>
+          <div class="cw"><canvas id="nsg-ch-magra"></canvas></div>
+        </div>
+      </div>
+      <div class="card cp" style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🩺 Grasa visceral</div>
+        <div class="cw" style="height:150px"><canvas id="nsg-ch-visceral"></canvas></div>
+      </div>
+      <!-- Comparativa con valores esperados -->
+      <div class="card cp" id="nsg-tabla-comp"></div>
+    </div>
+    <!-- Historial -->
+    <div id="nsg-historial" style="display:none">
+      <div id="nsg-hist-content"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ CITAS ═══ -->
 <div class="sc" id="sc-citas">
   <div class="sh2">
@@ -822,6 +887,7 @@ function go(id){
   const tb=document.getElementById('tb-'+id);if(tb)tb.classList.add('on');
   if(id==='captura'){renderCaptura();}
   if(id==='inc') renderInc();
+  if(id==='nutseg'){document.getElementById('nsg-panel').style.display='none';document.getElementById('nsg-q').value='';}
   if(id==='citas') renderCitas();
   if(id==='dash') renderDash();
   if(id==='usr') renderUsuarios();
@@ -1094,6 +1160,8 @@ async function guardarConsulta(tipo){
     noEmp:emp.noEmp,nombre:emp.nombre,planta:emp.planta,turno:emp.turno||USER.turno,
     depto:emp.depto,puesto:emp.puesto,nss:emp.nss,genero:emp.genero,
     cie10:g('f-cv'),diagnostico:diag,alergias:g('f-al')||'',cronicos:g('f-cr')||'',
+    grasaCorporal:g('f-grasa')||'',grasaVisceral:g('f-gvisceral')||'',
+    aguaCorporal:g('f-agua')||'',masaMagra:g('f-magra')||'',
     ta:g('f-ta'),fc:g('f-fc'),fr:g('f-fr'),temp:g('f-temp'),
     peso:g('f-peso'),talla:g('f-talla'),spo2:g('f-spo2'),glucosa:g('f-gluc'),imc:g('f-imc')||'',
     motivoConsulta:g('f-motivo')||'',plan:g('f-plan'),seguimiento:g('f-seg')||'',
@@ -2025,6 +2093,250 @@ function cargarExtAutocomplete(){
   const el=document.getElementById('ext-empresas-list');
   if(nl)nl.innerHTML=[...new Set(ext.map(x=>x.nombre))].map(n=>`<option value="${esc(n)}">`).join('');
   if(el)el.innerHTML=[...new Set(ext.map(x=>x.empresa))].map(e=>`<option value="${esc(e)}">`).join('');
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// SEGUIMIENTO NUTRICIONAL
+// ════════════════════════════════════════════════════════════════
+let _nsgEmp = null;
+let _nsgCharts = {};
+
+function buscarNutSeg(val){
+  val=(val||'').trim();
+  const drop=document.getElementById('nsg-drop');
+  if(!val||val.length<2){drop.classList.remove('show');return;}
+  const lc=val.toLowerCase();
+  // Only show patients that have nut consultations
+  const noEmpsNut=[...new Set(CONS.filter(c=>c.tipoAtencion==='NUT').map(c=>String(c.noEmp||'')))];
+  const matches=HC.filter(e=>(String(e.noEmp||'').toLowerCase().includes(lc)||String(e.nombre||'').toLowerCase().includes(lc))&&noEmpsNut.includes(String(e.noEmp||''))).slice(0,6);
+  // Also search directly in NUT cons if not in HC
+  const conMatches=CONS.filter(c=>c.tipoAtencion==='NUT'&&(String(c.noEmp||'').toLowerCase().includes(lc)||String(c.nombre||'').toLowerCase().includes(lc))).slice(0,4);
+  if(!matches.length&&!conMatches.length){
+    drop.innerHTML='<div class="si-item" style="color:var(--tx3)">Sin consultas nutricionales registradas para este empleado</div>';
+    drop.classList.add('show');return;
+  }
+  const shown=new Set();
+  let items='';
+  matches.forEach(e=>{shown.add(String(e.noEmp));items+=`<div class="si-item" onclick="selNutSeg('${esc(e.noEmp)}','${esc(e.nombre)}')"><div class="si-name">${e.nombre}</div><div class="si-meta">No.${e.noEmp} · ${e.planta||'—'}</div></div>`;});
+  conMatches.forEach(c=>{if(!shown.has(String(c.noEmp))){shown.add(String(c.noEmp));items+=`<div class="si-item" onclick="selNutSeg('${esc(c.noEmp)}','${esc(c.nombre)}')"><div class="si-name">${c.nombre||'—'}</div><div class="si-meta">No.${c.noEmp||'—'}</div></div>`;}});
+  drop.innerHTML=items;drop.classList.add('show');
+}
+
+function selNutSeg(noEmp, nombre){
+  document.getElementById('nsg-drop').classList.remove('show');
+  document.getElementById('nsg-q').value=nombre+' (No.'+noEmp+')';
+  _nsgEmp={noEmp,nombre};
+  const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{noEmp,nombre};
+  // Header
+  document.getElementById('nsg-header').innerHTML=`
+    <div class="ec">
+      <div class="ec-name">${emp.nombre} <span class="ec-tag">No. ${emp.noEmp}</span>${emp.genero?`<span class="ec-tag">${emp.genero}</span>`:''}</div>
+      <div class="ec-grid">
+        <div class="ec-f"><label>Planta</label><span>${emp.planta||'—'}</span></div>
+        <div class="ec-f"><label>Depto</label><span>${emp.depto||'—'}</span></div>
+        <div class="ec-f"><label>Edad</label><span>${emp.edad||'—'} años</span></div>
+        <div class="ec-f"><label>Género</label><span>${emp.genero||'—'}</span></div>
+      </div>
+    </div>`;
+  document.getElementById('nsg-panel').style.display='block';
+  nsgTab('evolucion',document.querySelector('#sc-nutsg .tab'));
+}
+
+function nsgTab(tab,btn){
+  document.querySelectorAll('#sc-nutsg .tab').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  ['evolucion','composicion','historial'].forEach(t=>{
+    const el=document.getElementById('nsg-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  });
+  if(tab==='evolucion') renderNsgEvolucion();
+  if(tab==='composicion') renderNsgComposicion();
+  if(tab==='historial') renderNsgHistorial();
+}
+
+function getNutCons(){
+  if(!_nsgEmp) return [];
+  const lc=String(_nsgEmp.noEmp||'').toLowerCase();
+  return CONS.filter(c=>c.tipoAtencion==='NUT'&&String(c.noEmp||'').toLowerCase()===lc)
+    .sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
+}
+
+function destroyNsgChart(key){
+  if(_nsgCharts[key]){try{_nsgCharts[key].destroy();}catch(e){}delete _nsgCharts[key];}
+}
+
+function renderNsgEvolucion(){
+  const cons=getNutCons();
+  if(!cons.length){
+    document.getElementById('nsg-evolucion').innerHTML='<div class="empty"><div class="empty-i">📊</div>Sin consultas nutricionales registradas</div>';
+    return;
+  }
+  const labels=cons.map(c=>c.fecha||'—');
+  const pesos=cons.map(c=>parseFloat(c.peso)||null);
+  const imcs=cons.map(c=>parseFloat(c.imc)||null);
+  const kcals=cons.map(c=>parseFloat(c.kcal)||null);
+
+  // Restore HTML if needed
+  if(!document.getElementById('nsg-ch-peso')){
+    document.getElementById('nsg-evolucion').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">⚖️ Peso e IMC</div><div class="cw"><canvas id="nsg-ch-peso"></canvas></div></div>
+        <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🔥 Calorías del plan</div><div class="cw"><canvas id="nsg-ch-kcal"></canvas></div></div>
+      </div>
+      <!-- Resumen -->
+      <div id="nsg-resumen-evo"></div>`;
+  }
+
+  destroyNsgChart('peso');
+  const ctxP=document.getElementById('nsg-ch-peso');
+  if(ctxP)_nsgCharts.peso=new Chart(ctxP,{type:'line',data:{labels,datasets:[
+    {label:'Peso (kg)',data:pesos,borderColor:'#1D3F8A',backgroundColor:'rgba(29,63,138,.1)',tension:.3,pointRadius:5,pointBackgroundColor:'#1D3F8A',yAxisID:'y'},
+    {label:'IMC',data:imcs,borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,.08)',tension:.3,pointRadius:5,pointBackgroundColor:'#DC2626',borderDash:[5,3],yAxisID:'y2'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}},scales:{y:{beginAtZero:false,title:{display:true,text:'Peso kg',font:{size:10}}},y2:{beginAtZero:false,position:'right',title:{display:true,text:'IMC',font:{size:10}},grid:{drawOnChartArea:false}}}}});
+
+  destroyNsgChart('kcal');
+  const ctxK=document.getElementById('nsg-ch-kcal');
+  if(ctxK)_nsgCharts.kcal=new Chart(ctxK,{type:'bar',data:{labels,datasets:[
+    {label:'Kcal/día',data:kcals,backgroundColor:'rgba(22,101,52,.65)',borderRadius:6}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,title:{display:true,text:'kcal',font:{size:10}}}}}});
+
+  // Resumen de cambios
+  const resEl=document.getElementById('nsg-resumen-evo');
+  if(resEl&&cons.length>=2){
+    const primera=cons[0],ultima=cons[cons.length-1];
+    const difPeso=((parseFloat(ultima.peso)||0)-(parseFloat(primera.peso)||0)).toFixed(1);
+    const difImc=((parseFloat(ultima.imc)||0)-(parseFloat(primera.imc)||0)).toFixed(1);
+    const positivo=parseFloat(difPeso)<0;
+    resEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px">
+      <div class="kpi ${positivo?'gr':'rd'}"><div class="kv" style="font-size:22px;color:${positivo?'var(--gr)':'var(--rd)'}">${difPeso>0?'+':''}${difPeso} kg</div><div class="kl">Cambio de peso</div></div>
+      <div class="kpi"><div class="kv" style="font-size:22px">${difImc>0?'+':''}${difImc}</div><div class="kl">Cambio IMC</div></div>
+      <div class="kpi"><div class="kv" style="font-size:22px">${cons.length}</div><div class="kl">Consultas totales</div></div>
+      <div class="kpi"><div class="kv" style="font-size:18px;color:var(--gr)">${ultima.imcCategoria||'—'}</div><div class="kl">Categoría actual</div></div>
+    </div>`;
+  }
+}
+
+function renderNsgComposicion(){
+  const cons=getNutCons().filter(c=>c.grasa||c.agua||c.magra||c.gvisceral||
+    c.grasaCorporal||c.aguaCorporal||c.masaMagra||c.grasaVisceral);
+
+  if(!cons.length){
+    document.getElementById('nsg-composicion').innerHTML='<div class="empty"><div class="empty-i">🧬</div>Sin datos de composición corporal.<br><small style="font-size:11px;color:var(--tx3)">Captura % grasa, % agua, masa magra y grasa visceral en las consultas.</small></div>';
+    return;
+  }
+
+  // Restore HTML
+  document.getElementById('nsg-composicion').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🧬 % Grasa y % Agua</div><div class="cw"><canvas id="nsg-ch-grasa"></canvas></div></div>
+      <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">💪 Masa magra vs esperada</div><div class="cw"><canvas id="nsg-ch-magra"></canvas></div></div>
+    </div>
+    <div class="card cp" style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🩺 Grasa visceral</div>
+      <div class="cw" style="height:150px"><canvas id="nsg-ch-visceral"></canvas></div>
+    </div>
+    <div class="card cp" id="nsg-tabla-comp"></div>`;
+
+  const labels=cons.map(c=>c.fecha||'—');
+  const grasas=cons.map(c=>parseFloat(c.grasa||c.grasaCorporal)||null);
+  const aguas=cons.map(c=>parseFloat(c.agua||c.aguaCorporal)||null);
+  const magras=cons.map(c=>parseFloat(c.magra||c.masaMagra)||null);
+  const viscerales=cons.map(c=>parseFloat(c.gvisceral||c.grasaVisceral)||null);
+
+  // Calcular masa magra esperada según edad, sexo, peso
+  const emp=HC.find(x=>String(x.noEmp)===String(_nsgEmp.noEmp))||{};
+  const esF=(emp.genero||'').toLowerCase().includes('f');
+  const edad=calcEdadHC(emp);
+  const magrasEsp=cons.map(c=>{
+    const p=parseFloat(c.peso)||0;
+    if(!p)return null;
+    // Referencia: Gallagher 2000 — % grasa esperado por edad/sexo
+    const gEsp=esF?(0.14*edad+0.34*20+8.0):(0.14*edad+0.34*20+0.0); // simplificado
+    return+(p*(1-gEsp/100)).toFixed(1);
+  });
+
+  destroyNsgChart('grasa');
+  const ctxG=document.getElementById('nsg-ch-grasa');
+  if(ctxG)_nsgCharts.grasa=new Chart(ctxG,{type:'line',data:{labels,datasets:[
+    {label:'% Grasa',data:grasas,borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,.1)',tension:.3,pointRadius:5,pointBackgroundColor:'#F59E0B'},
+    {label:'% Agua',data:aguas,borderColor:'#3B82F6',backgroundColor:'rgba(59,130,246,.1)',tension:.3,pointRadius:5,pointBackgroundColor:'#3B82F6',borderDash:[5,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}},scales:{y:{beginAtZero:false,title:{display:true,text:'%',font:{size:10}}}}}});
+
+  destroyNsgChart('magra');
+  const ctxM=document.getElementById('nsg-ch-magra');
+  if(ctxM)_nsgCharts.magra=new Chart(ctxM,{type:'line',data:{labels,datasets:[
+    {label:'Masa magra real (kg)',data:magras,borderColor:'#166534',backgroundColor:'rgba(22,101,52,.1)',tension:.3,pointRadius:5,pointBackgroundColor:'#166534'},
+    {label:'Masa magra esperada (kg)',data:magrasEsp,borderColor:'#94A3B8',backgroundColor:'rgba(148,163,184,.08)',tension:.3,pointRadius:5,pointBackgroundColor:'#94A3B8',borderDash:[6,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10}}}},scales:{y:{beginAtZero:false,title:{display:true,text:'kg',font:{size:10}}}}}});
+
+  destroyNsgChart('visceral');
+  const ctxV=document.getElementById('nsg-ch-visceral');
+  if(ctxV)_nsgCharts.visceral=new Chart(ctxV,{type:'bar',data:{labels,datasets:[
+    {label:'Grasa visceral',data:viscerales,backgroundColor:viscerales.map(v=>v===null?'#94A3B8':v>=13?'#DC2626':v>=9?'#F59E0B':'#16A34A'),borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Grasa visceral: ${ctx.raw} (${ctx.raw>=13?'Alto':ctx.raw>=9?'Moderado':'Normal'})`}}},scales:{y:{beginAtZero:true,title:{display:true,text:'Nivel',font:{size:10}}}}}});
+
+  // Tabla comparativa última vs primera
+  const primera=cons[0],ultima=cons[cons.length-1];
+  const tabla=document.getElementById('nsg-tabla-comp');
+  if(tabla){
+    const metricas=[
+      {label:'Peso',key:'peso',unit:'kg',first:primera.peso,last:ultima.peso},
+      {label:'IMC',key:'imc',unit:'',first:primera.imc,last:ultima.imc},
+      {label:'% Grasa',key:'grasa',unit:'%',first:primera.grasa||primera.grasaCorporal,last:ultima.grasa||ultima.grasaCorporal},
+      {label:'% Agua',key:'agua',unit:'%',first:primera.agua||primera.aguaCorporal,last:ultima.agua||ultima.aguaCorporal},
+      {label:'Masa magra',key:'magra',unit:'kg',first:primera.magra||primera.masaMagra,last:ultima.magra||ultima.masaMagra},
+      {label:'Grasa visceral',key:'gvisceral',unit:'',first:primera.gvisceral||primera.grasaVisceral,last:ultima.gvisceral||ultima.grasaVisceral},
+    ];
+    tabla.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">📊 Comparativa: primera vs última consulta</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--sf3)">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);border-bottom:1px solid var(--bor)">Métrica</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);border-bottom:1px solid var(--bor)">Primera (${primera.fecha||'—'})</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);border-bottom:1px solid var(--bor)">Última (${ultima.fecha||'—'})</th>
+        <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);border-bottom:1px solid var(--bor)">Cambio</th>
+      </tr></thead>
+      <tbody>${metricas.map(m=>{
+        const f=parseFloat(m.first)||0,l=parseFloat(m.last)||0;
+        const dif=f&&l?+(l-f).toFixed(1):null;
+        const positivo=m.key==='magra'||m.key==='agua'?dif>0:dif<0;
+        const difStr=dif!==null?(dif>0?'+'+dif:dif)+m.unit:'—';
+        const color=dif===null?'var(--tx3)':positivo?'var(--gr)':'var(--rd)';
+        return`<tr><td style="padding:8px 10px;border-bottom:1px solid var(--bor);font-weight:600">${m.label}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid var(--bor);text-align:center">${m.first?m.first+m.unit:'—'}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid var(--bor);text-align:center;font-weight:700">${m.last?m.last+m.unit:'—'}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid var(--bor);text-align:center;font-weight:800;color:${color}">${difStr}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
+function renderNsgHistorial(){
+  const cons=getNutCons();
+  const el=document.getElementById('nsg-hist-content');
+  if(!cons.length){el.innerHTML='<div class="empty"><div class="empty-i">📋</div>Sin consultas</div>';return;}
+  el.innerHTML=[...cons].reverse().map(r=>`
+    <div class="card cp" style="margin-bottom:10px;border-left:3px solid var(--gr)">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <div>
+          <span style="font-weight:800;font-size:14px">${r.fecha||'—'}</span>
+          <span class="folio" style="margin-left:8px">${r.folio||''}</span>
+          ${r.editado==='Sí'?'<span class="pill pgold" style="margin-left:4px">Editado</span>':''}
+        </div>
+        <span class="pill pgr">${r.tipoCons||'Consulta'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:10px">
+        ${r.peso?`<div style="background:var(--sf2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--nv)">${r.peso}</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">kg</div></div>`:''}
+        ${r.imc?`<div style="background:var(--sf2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--nv)">${r.imc}</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">IMC</div></div>`:''}
+        ${r.kcal?`<div style="background:var(--gr3);border:1px solid var(--gr4);border-radius:8px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--gr)">${r.kcal}</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">kcal</div></div>`:''}
+        ${r.proteinas?`<div style="background:var(--bl3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--bl)">${r.proteinas}g</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Prot.</div></div>`:''}
+        ${r.grasa||r.grasaCorporal?`<div style="background:var(--am3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--am)">${r.grasa||r.grasaCorporal}%</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Grasa</div></div>`:''}
+        ${r.magra||r.masaMagra?`<div style="background:var(--gr3);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--gr)">${r.magra||r.masaMagra}kg</div><div style="font-size:9px;color:var(--tx3);text-transform:uppercase">Magra</div></div>`:''}
+      </div>
+      ${r.imcCategoria?`<span class="pill pgy" style="margin-bottom:6px">${r.imcCategoria}</span>`:''}
+      ${r.recomendaciones||r.plan?`<div style="font-size:11px;background:var(--sf2);border-radius:6px;padding:8px;color:var(--tx2)">${(r.recomendaciones||r.plan||'').slice(0,200)}</div>`:''}
+      <div style="font-size:10px;color:var(--tx3);margin-top:6px">${r.registradoPor||'—'}</div>
+    </div>`).join('');
 }
 
 // ════════════════════════════════════════════════════════════════
