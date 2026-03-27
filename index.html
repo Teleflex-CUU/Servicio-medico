@@ -369,13 +369,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-weight:800;font-size:13px;padding:8px 18px" onclick="openModal('mo-inc')">📋 + Nueva incapacidad</button>
     </div>
   </div>
-  <!-- Botón grande visible cuando no hay datos -->
-  <div id="inc-cta" style="background:linear-gradient(135deg,rgba(220,38,38,.06),rgba(220,38,38,.02));border:2px dashed rgba(220,38,38,.3);border-radius:14px;padding:24px;text-align:center;margin-bottom:14px;display:none">
-    <div style="font-size:36px;margin-bottom:8px">📋</div>
-    <div style="font-weight:800;font-size:15px;color:var(--nv);margin-bottom:6px">Registrar nueva incapacidad</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Captura los datos del trabajador, tipo, diagnóstico y fechas</div>
-    <button class="btn" style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-weight:800;font-size:14px;padding:12px 28px" onclick="openModal('mo-inc')">📋 Capturar incapacidad</button>
-  </div>
+
   <!-- KPIs -->
   <div class="kpis">
     <div class="kpi rd"><div class="kv" id="ki-act">0</div><div class="kl">Activas</div></div>
@@ -1321,12 +1315,11 @@ function renderInc(){
   lista.sort((a,b)=>String(b.incInicio||b.fecha||'').localeCompare(String(a.incInicio||a.fecha||'')));
   const el=document.getElementById('inc-lista');if(!el)return;
   const ctaEl=document.getElementById('inc-cta');
+  if(ctaEl) ctaEl.style.display='none'; // CTA siempre oculto cuando hay datos o filtros
   if(!lista.length){
-    el.innerHTML='<div class="empty"><div class="empty-i">📋</div>'+(INC.length?'Sin resultados':'Sin incapacidades registradas.')+'</div>';
-    if(ctaEl&&!INC.length) ctaEl.style.display='block';
+    el.innerHTML='<div class="empty"><div class="empty-i">📋</div>'+(INC.length?'Sin resultados para los filtros seleccionados':'Sin incapacidades registradas.')+'</div>';
     return;
   }
-  if(ctaEl) ctaEl.style.display='none';
   el.innerHTML=lista.map(r=>{
     const activa=incActivaCheck(r);
     const tipo=r.tipo||r.incapacidad||'—';
