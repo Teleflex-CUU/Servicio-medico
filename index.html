@@ -1048,7 +1048,7 @@ function buildFormNut(emp){
     <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🤖 Generar menú con IA</button>
   </div>
   <div id="nut-menu" style="display:none;margin-bottom:10px"></div>
-  <div class="fi"><label>Diagnóstico nutricional (auto)</label><input type="text" id="f-dg" readonly class="auto" placeholder="Se calcula con el IMC"></div>
+  <div class="fi"><label>Diagnóstico nutricional</label><input type="text" id="f-dg" class="auto" placeholder="Se autorrellena con el IMC — puedes editarlo"></div>
   <div class="g2"><div class="fi" style="margin:0"><label>Peso meta (kg)</label><input type="number" step=".1" id="f-peso-meta"></div><div class="fi" style="margin:0"><label>Próxima cita</label><input type="date" id="f-prox"></div></div>
   <div class="fi"><label>Comorbilidades</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
   <div class="fi"><label>Recomendaciones</label><textarea id="f-plan" rows="3" placeholder="Plan alimentario, indicaciones..."></textarea></div>
@@ -1146,7 +1146,16 @@ function copiarMenu(){if(!window._menuIA)return;let txt='MENÚ SEMANAL:\n';windo
 // ════════════════════════════════════════════════════════════════
 async function guardarConsulta(tipo){
   const emp=_capEmp||_empActual;if(!emp){toast('Selecciona un empleado primero','err');return;}
-  const diag=g('f-dg');if(!diag&&!g('f-cv')){toast('El diagnóstico es obligatorio','err');return;}
+  let diag=g('f-dg');
+  // NUT: autofill from IMC category if empty
+  if(tipo==='NUT'&&!diag){
+    const cat=document.getElementById('r-cat');
+    if(cat&&cat.textContent&&cat.textContent!=='—') diag=cat.textContent;
+    else diag='Consulta nutricional';
+    const dgEl=document.getElementById('f-dg');if(dgEl)dgEl.value=diag;
+  }
+  // ENF/MED: diagnóstico obligatorio pero acepta texto libre
+  if(!diag&&tipo!=='NUT'){toast('El diagnóstico es obligatorio — escríbelo o selecciona un CIE-10','err');return;}
   const ahora=new Date();
   const calc=window._nutCalc||{};
   const folio=tipo+'-'+Date.now().toString().slice(-6);
@@ -2032,7 +2041,7 @@ function buildCapFormNut(emp){
       <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🤖 Generar menú con IA</button>
     </div>
     <div id="nut-menu" style="display:none;margin-bottom:10px"></div>
-    <div class="fi"><label>Diagnóstico nutricional (auto)</label><input type="text" id="f-dg" readonly class="auto" placeholder="Se calcula con el IMC"></div>
+    <div class="fi"><label>Diagnóstico nutricional</label><input type="text" id="f-dg" class="auto" placeholder="Se autorrellena con el IMC — puedes editarlo"></div>
     <div class="fi"><label>Comorbilidades</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
     <div class="fi"><label>Recomendaciones</label><textarea id="f-plan" rows="3" placeholder="Plan alimentario, indicaciones..."></textarea></div>
     <div class="fi"><label>Próxima cita</label><input type="date" id="f-prox"></div>
