@@ -642,6 +642,10 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       <div class="fi"><label>Empleado *</label>
         <div class="sw"><span class="si">🔍</span><input type="text" id="inc-eq" placeholder="No. empleado o nombre..." oninput="buscarEmpModal('inc-eq','inc-ed','inc-es')" autocomplete="off"><div class="sd" id="inc-ed"></div></div></div>
       <input type="hidden" id="inc-es"><div id="inc-ec"></div>
+      <div class="fi">
+        <label>Folio IMSS <span style="font-size:10px;color:var(--tx3);font-weight:400">(número que expide el IMSS — opcional si aún no se tiene)</span></label>
+        <input type="text" id="inc-folio" placeholder="Ej: 2026-123456 — dejar vacío si no se tiene aún">
+      </div>
       <div class="g2">
         <div class="fi" style="margin:0"><label>Tipo *</label>
           <select id="inc-tipo"><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option><option>Accidente</option></select></div>
@@ -1220,9 +1224,11 @@ function openModal(id){
   if(id==='mo-inc'){
     const reg=document.getElementById('inc-reg');if(reg)reg.value=USER?USER.nombre:'';
     const fc=document.getElementById('inc-fecha-cap');if(fc)fc.value=new Date().toLocaleDateString('es-MX');
-    // Pre-fill today as start date if empty
     const iniEl=document.getElementById('inc-ii');
     if(iniEl&&!iniEl.value) iniEl.value=new Date().toISOString().split('T')[0];
+    // Clear folio for new capture
+    const folioEl=document.getElementById('inc-folio');
+    if(folioEl) folioEl.value='';
   }
 }
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open');}
@@ -2075,7 +2081,9 @@ async function guardarInc(){
   const noEmp=g('inc-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
   const ini=g('inc-ii');if(!ini){toast('La fecha inicio es obligatoria','err');return;}
   const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{};
-  const inc={folio:'INC-'+Date.now().toString().slice(-6),fecha:new Date().toLocaleDateString('es-MX'),noEmp,nombre:emp.nombre||'',planta:emp.planta||'',turno:emp.turno||'',depto:emp.depto||'',nss:emp.nss||'',tipo:g('inc-tipo'),secuencia:g('inc-sec'),cie10:g('inc-cv'),diagnostico:g('inc-dg'),incInicio:ini,incFin:g('inc-if'),incDias:g('inc-ds'),estado:'Activa',registradoPor:USER.nombre};
+  const folioIMSS = g('inc-folio');
+  const folio = folioIMSS || 'INC-'+Date.now().toString().slice(-6);
+  const inc={folio,fecha:new Date().toLocaleDateString('es-MX'),noEmp,nombre:emp.nombre||'',planta:emp.planta||'',turno:emp.turno||'',depto:emp.depto||'',nss:emp.nss||'',tipo:g('inc-tipo'),secuencia:g('inc-sec'),cie10:g('inc-cv'),diagnostico:g('inc-dg'),incInicio:ini,incFin:g('inc-if'),incDias:g('inc-ds'),estado:'Activa',registradoPor:USER.nombre};
   INC.push(inc);sv(SK.inc,INC);renderInc();
   setSyncDot('busy');const r=await gasPost({action:'saveInc',val:inc});setSyncDot(r.ok?'ok':'err');
   toast(r.ok?'✅ Incapacidad guardada':'⚠️ Guardada local','ok');closeModal('mo-inc');
