@@ -329,8 +329,17 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div><h2>Incapacidades</h2></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-gh btn-sm" onclick="syncInc()">🔄 Sync</button>
-      <button class="btn btn-tl btn-sm" onclick="openModal('mo-inc')">+ Nueva</button>
+      <button class="btn btn-tl btn-sm" onclick="openModal('mo-inc')">+ Nueva Captura</button>
     </div>
+</div>
+<!-- Pestañas internas de Incapacidades -->
+<div class="tabs">
+  <button class="tab on" onclick="tabIncap('lista', this)">📋 Lista Activa</button>
+  <button class="tab" onclick="tabIncap('reporte', this)">📊 Reporte y Filtros</button>
+</div>
+<div id="inc-container-dinamico">
+    <!-- Aquí se cargará la lista o el reporte según se elija -->
+</div>  </div>
   </div>
   <div class="kpis">
     <div class="kpi rd"><div class="kv" id="ki-act">0</div><div class="kl">Activas</div></div>
@@ -1553,6 +1562,95 @@ function abrirCapturaNueva() {
     
     // 3. Renderizar el formulario (médico, enf o nut) en el nuevo div
     renderPanelCaptura(_empActual); 
+}
+  // --- MÓDULO NUTRICIÓN: SEGUIMIENTO ---
+
+function obtenerIdeales(sexo, edad) {
+    // Valores de referencia simplificados según edad y sexo
+    const esMujer = (sexo || 'M').toUpperCase().includes('F');
+    return {
+        grasa: esMujer ? "21-32%" : "10-20%",
+        visceral: "1-9",
+        agua: esMujer ? "45-60%" : "50-65%",
+        magra: esMujer ? "70-80%" : "75-85%"
+    };
+}
+
+function renderNutricionComparativa(noEmp) {
+    const historico = CONS.filter(c => String(c.noEmp) === String(noEmp) && c.tipoAtencion === 'NUT')
+                          .sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    
+    if (historico.length < 1) return "";
+
+    const actual = historico[historico.length - 1];
+    const previa = historico.length > 1 ? historico[historico.length - 2] : null;
+    const ideales = obtenerIdeales(_empActual.genero, _empActual.edad);
+
+    let html = `
+    <div class="card cp" style="border-top: 4px solid var(--gr)">
+        <div class="sec-t">📈 Seguimiento Nutricional vs Ideales</div>
+        <div class="nut-grid">
+            ${crearCardNut('Peso (kg)', actual.peso, previa?.peso, 'kg')}
+            ${crearCardNut('% Grasa', actual.grasa, previa?.grasa, '%', ideales.grasa)}
+            ${crearCardNut('G. Visceral', actual.visceral, previa?.visceral, '', ideales.visceral)}
+            ${crearCardNut('% Agua', actual.agua, previa?.agua, '%', ideales.agua)}
+            ${crearCardNut('Masa Magra', actual.magra, previa?.magra, 'kg', ideales.magra)}
+        </div>
+        <div class="cw" style="margin-top:20px"><canvas id="chart-seguimiento-nut"></canvas></div>
+    </div>`;
+    
+    return html;
+}
+
+function crearCardNut(label, actual, previa, unidad, ideal = "") {
+    const valAct = parseFloat(actual) || 0;
+    const valPrev = parseFloat(previa) || 0;
+    const diff = previa ? (valAct - valPrev).toFixed(1) : 0;
+    const color = diff > 0 ? 'var(--rd)' : 'var(--gr)'; // Simplificado: rojo si sube, verde si baja
+
+    return `
+    <div class="nut-card">
+        <div class="nut-label">${label}</div>
+        <div class="nut-val">${valAct}${unidad}</div>
+        ${previa ? `<div style="font-size:10px; color:${color}">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff)}${unidad}</div>` : ''}
+        ${ideal ? `<div style="font-size:9px; color:var(--tx3); margin-top:5px">Ideal: ${ideal}</div>` : ''}
+    </div>`;
+}
+  // Cálculo automático de fecha de retorno
+function autoCalcIncapacidad() {
+    const fechaInicio = document.getElementById('inc-ii').value;
+    const dias = parseInt(document.getElementById('inc-ds').value);
+    
+    if (fechaInicio && dias) {
+        let fecha = new Date(fechaInicio);
+        fecha.setDate(fecha.getDate() + dias); // Sumar días
+        
+        // Formatear a YYYY-MM-DD para el input
+        const yyyy = fecha.getFullYear();
+        const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dd = String(fecha.getDate()).padStart(2, '0');
+        document.getElementById('inc-if').value = `${yyyy}-${mm}-${dd}`;
+        
+        // Alerta de incapacidad prolongada
+        if (dias > 28) {
+            toast("⚠️ Alerta: Incapacidad prolongada detectada (>28 días)", "inf");
+        }
+    }
+}
+  function obtenerFooterImpresion() {
+    return `
+    <div style="margin-top: 50px; border-top: 1px solid #000; padding-top: 10px; display: flex; justify-content: space-between;">
+        <div>
+            <p><strong>Realizado por:</strong> ${USER.nombre}</p>
+            <p><strong>Cédula Profesional:</strong> ${USER.cedula || 'N/A'}</p>
+            <p><strong>Especialidad:</strong> ${USER.rol.toUpperCase()}</p>
+        </div>
+        <div style="text-align: right;">
+            <p>AUNA Salud Ocupacional</p>
+            <p>Teleflex Chihuahua</p>
+            <p style="font-size: 9px;">Modificado por última vez: ${new Date().toLocaleString()}</p>
+        </div>
+    </div>`;
 }
 </script>
 </body></html>
