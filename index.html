@@ -1045,7 +1045,7 @@ function buildFormNut(emp){
     <div class="imc-bar"><div class="imc-needle" id="imc-needle"></div></div>
     <div class="macro-bar"><div class="macro-seg" id="mb-p" style="background:#3B82F6"></div><div class="macro-seg" id="mb-c" style="background:#22C55E"></div><div class="macro-seg" id="mb-g" style="background:#F59E0B"></div></div>
     <div style="display:flex;gap:10px;font-size:10px;color:var(--tx2);margin-top:4px"><span>🔵 Proteínas</span><span>🟢 Carbos</span><span>🟡 Grasas</span></div>
-    <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🤖 Generar menú con IA</button>
+    <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🍽️ Generar menú semanal</button>
   </div>
   <div id="nut-menu" style="display:none;margin-bottom:10px"></div>
   <div class="fi"><label>Diagnóstico nutricional</label><input type="text" id="f-dg" class="auto" placeholder="Se autorrellena con el IMC — puedes editarlo"></div>
@@ -1118,23 +1118,135 @@ function calcDias(iniId,finId,diasId){
 }
 function toggleIncBlock(){const v=g('f-incap');const b=document.getElementById('inc-block');if(b)b.style.display=(v&&v!=='No')?'block':'none';}
 
-async function generarMenuIA(){
-  const calc=window._nutCalc;if(!calc){toast('Completa peso, talla, actividad y objetivo','err');return;}
-  const btn=document.getElementById('btn-menu-ia');if(btn){btn.disabled=true;btn.textContent='🤖 Generando...';}
-  const labels={perdida:'pérdida de peso',muscular:'aumento de masa muscular',mantenimiento:'mantenimiento',diabetes:'control de diabetes',colesterol:'control de colesterol',embarazo:'embarazo/lactancia',habitos:'hábitos generales'};
-  try{
-    const r=await gasPost({
-      action:'generarMenu',
-      kcal:calc.kcal,prot:calc.prot,carbs:calc.carbs,gras:calc.gras,
-      obj:labels[calc.obj]||calc.obj
+
+// ════════════════════════════════════════════════════════════════
+// BASE DE ALIMENTOS Y GENERADOR DE MENÚ LOCAL
+// ════════════════════════════════════════════════════════════════
+const ALIMENTOS = {
+  desayuno: [
+    {n:'Avena con leche y fruta',kcal:320,p:12,c:52,g:7,apto:['perdida','mantenimiento','diabetes','habitos']},
+    {n:'Huevos revueltos con frijoles y tortilla',kcal:420,p:22,c:38,g:16,apto:['muscular','mantenimiento','habitos']},
+    {n:'Yogur griego con granola y miel',kcal:350,p:18,c:45,g:8,apto:['muscular','mantenimiento','habitos']},
+    {n:'Licuado de plátano con avena y leche',kcal:380,p:14,c:62,g:7,apto:['muscular','embarazo']},
+    {n:'Huevo estrellado con nopales y tortilla',kcal:290,p:16,c:28,g:12,apto:['perdida','diabetes','habitos']},
+    {n:'Chilaquiles verdes con frijoles',kcal:450,p:15,c:58,g:16,apto:['mantenimiento','habitos']},
+    {n:'Fruta de temporada con granola',kcal:220,p:5,c:45,g:4,apto:['perdida','colesterol','embarazo']},
+    {n:'Tostadas con frijoles y queso fresco',kcal:340,p:14,c:48,g:9,apto:['mantenimiento','habitos']},
+    {n:'Omelet de espinacas con pan integral',kcal:310,p:20,c:28,g:12,apto:['perdida','diabetes','muscular']},
+    {n:'Atole de avena con tostadas integrales',kcal:280,p:9,c:50,g:5,apto:['perdida','habitos','embarazo']},
+  ],
+  colacion_am: [
+    {n:'Manzana con mantequilla de cacahuate',kcal:180,p:5,c:22,g:9,apto:['todos']},
+    {n:'Nueces y almendras (puño)',kcal:160,p:5,c:6,g:14,apto:['todos']},
+    {n:'Yogur natural sin azúcar',kcal:120,p:10,c:12,g:3,apto:['todos']},
+    {n:'Fruta de temporada',kcal:80,p:1,c:18,g:0,apto:['perdida','diabetes','embarazo']},
+    {n:'Barrita de avena artesanal',kcal:150,p:4,c:25,g:4,apto:['muscular','mantenimiento']},
+    {n:'Pepino con limón y chile',kcal:40,p:1,c:8,g:0,apto:['perdida','diabetes']},
+    {n:'Jícama con limón',kcal:50,p:1,c:11,g:0,apto:['perdida','diabetes','colesterol']},
+    {n:'Elote cocido',kcal:130,p:3,c:27,g:1,apto:['mantenimiento','habitos','embarazo']},
+  ],
+  comida: [
+    {n:'Pollo asado con arroz y ensalada',kcal:520,p:38,c:45,g:12,apto:['todos']},
+    {n:'Caldo de res con verduras y tortillas',kcal:480,p:30,c:42,g:14,apto:['todos']},
+    {n:'Sopa de lentejas con ensalada y tortilla',kcal:440,p:22,c:58,g:8,apto:['perdida','colesterol','habitos']},
+    {n:'Milanesa de pollo con puré de papa y verduras',kcal:560,p:40,c:48,g:14,apto:['muscular','mantenimiento']},
+    {n:'Pescado al vapor con verduras y arroz',kcal:420,p:35,c:38,g:8,apto:['perdida','colesterol','diabetes','embarazo']},
+    {n:'Tacos de frijoles con queso y chile',kcal:380,p:16,c:52,g:10,apto:['perdida','habitos']},
+    {n:'Bistec con nopales y frijoles',kcal:490,p:34,c:32,g:18,apto:['diabetes','muscular','mantenimiento']},
+    {n:'Sopa de verduras con pollo desmenuzado',kcal:360,p:28,c:30,g:8,apto:['perdida','colesterol','embarazo']},
+    {n:'Enchiladas verdes con pollo',kcal:540,p:32,c:55,g:16,apto:['muscular','mantenimiento','habitos']},
+    {n:'Chiles rellenos de queso con arroz',kcal:460,p:20,c:42,g:22,apto:['mantenimiento','habitos']},
+    {n:'Atún con ensalada y galletas integrales',kcal:320,p:30,c:24,g:8,apto:['perdida','diabetes','colesterol']},
+    {n:'Pozole de pollo con tostadas',kcal:500,p:35,c:48,g:12,apto:['mantenimiento','habitos','embarazo']},
+  ],
+  colacion_pm: [
+    {n:'Licuado de proteína con leche',kcal:220,p:25,c:18,g:4,apto:['muscular']},
+    {n:'Queso Oaxaca con jícama',kcal:150,p:9,c:8,g:8,apto:['todos']},
+    {n:'Palomitas naturales',kcal:90,p:2,c:16,g:2,apto:['perdida','habitos']},
+    {n:'Galletas integrales con aguacate',kcal:170,p:3,c:18,g:9,apto:['colesterol','mantenimiento']},
+    {n:'Fruta con yogur',kcal:130,p:6,c:22,g:2,apto:['todos']},
+    {n:'Pepino y zanahoria con hummus',kcal:110,p:4,c:12,g:5,apto:['perdida','diabetes','colesterol']},
+    {n:'Plátano con cacahuates',kcal:200,p:5,c:32,g:7,apto:['muscular','embarazo','mantenimiento']},
+  ],
+  cena: [
+    {n:'Sopa de verduras con pan integral',kcal:280,p:10,c:42,g:6,apto:['perdida','colesterol','habitos']},
+    {n:'Quesadillas de frijoles con ensalada',kcal:360,p:16,c:48,g:10,apto:['mantenimiento','habitos']},
+    {n:'Atún con aguacate y tostadas',kcal:300,p:24,c:20,g:12,apto:['perdida','diabetes','colesterol']},
+    {n:'Pollo desmenuzado con verduras salteadas',kcal:320,p:30,c:14,g:12,apto:['perdida','muscular','diabetes']},
+    {n:'Huevos con ejotes y tortilla',kcal:290,p:18,c:26,g:12,apto:['todos']},
+    {n:'Crema de zanahoria con pan tostado',kcal:220,p:6,c:34,g:6,apto:['perdida','colesterol','embarazo']},
+    {n:'Calabacitas con pollo y arroz integral',kcal:380,p:26,c:40,g:8,apto:['diabetes','muscular','mantenimiento']},
+    {n:'Ensalada de atún con aguacate',kcal:260,p:22,c:10,g:14,apto:['perdida','colesterol','diabetes']},
+    {n:'Tacos de frijoles con queso',kcal:320,p:14,c:44,g:9,apto:['habitos','mantenimiento','embarazo']},
+  ]
+};
+
+const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+function generarMenuLocal(kcalDia, obj) {
+  // Distribución calórica por tiempo de comida
+  const dist = {desayuno:.25, colacion_am:.10, comida:.35, colacion_pm:.10, cena:.20};
+  const dias = [];
+
+  const filtrar = (tipo, kcalObj) => {
+    const opciones = ALIMENTOS[tipo].filter(a =>
+      a.apto.includes('todos') || a.apto.includes(obj) ||
+      a.apto.includes('mantenimiento') // fallback
+    );
+    if(!opciones.length) return ALIMENTOS[tipo][0];
+    // Ordenar por cercanía calórica al objetivo
+    return opciones.sort((a,b) =>
+      Math.abs(a.kcal - kcalObj) - Math.abs(b.kcal - kcalObj)
+    );
+  };
+
+  // Rotar alimentos para no repetir
+  const usados = {desayuno:[],colacion_am:[],comida:[],colacion_pm:[],cena:[]};
+
+  DIAS_SEMANA.forEach((dia, i) => {
+    const tiempos = {};
+    let kcalTotal = 0;
+
+    Object.entries(dist).forEach(([tiempo, pct]) => {
+      const kcalObj = Math.round(kcalDia * pct);
+      const opciones = filtrar(tiempo, kcalObj);
+      // Evitar repetir en días consecutivos
+      const disponibles = opciones.filter(a => !usados[tiempo].slice(-2).includes(a.n));
+      const elegido = disponibles.length ? disponibles[0] : opciones[0];
+      usados[tiempo].push(elegido.n);
+      tiempos[tiempo] = elegido.n;
+      kcalTotal += elegido.kcal;
     });
-    if(!r.ok){toast('Error generando menú — verifica la API key en el GAS','err');return;}
-    const txt=r.data||'';
-    const menu=JSON.parse(txt.replace(/```json|```/g,'').trim());
-    renderMenuIAPanel(menu.dias||[]);
-  }catch(e){toast('Error generando menú: '+e.message,'err');}
-  if(btn){btn.disabled=false;btn.textContent='🤖 Generar menú con IA';}
+
+    dias.push({
+      dia,
+      desayuno: tiempos.desayuno,
+      colacion_am: tiempos.colacion_am,
+      comida: tiempos.comida,
+      colacion_pm: tiempos.colacion_pm,
+      cena: tiempos.cena,
+      kcal_total: kcalTotal
+    });
+  });
+
+  return dias;
 }
+
+function generarMenuIA(){
+  const calc=window._nutCalc;
+  if(!calc){toast('Completa peso, talla, actividad y objetivo primero','err');return;}
+  const btn=document.getElementById('btn-menu-ia');
+  if(btn){btn.textContent='⏳ Generando...';}
+  try{
+    const dias = generarMenuLocal(calc.kcal, calc.obj||'mantenimiento');
+    renderMenuIAPanel(dias);
+    toast('✅ Menú generado','ok');
+  }catch(e){
+    toast('Error generando menú','err');
+  }
+  if(btn){btn.textContent='🍽️ Generar menú';}
+}
+
 function renderMenuIAPanel(dias){
   window._menuIA=dias;
   const panel=document.getElementById('nut-menu');
@@ -2042,7 +2154,7 @@ function buildCapFormNut(emp){
       <div class="imc-bar"><div class="imc-needle" id="imc-needle"></div></div>
       <div class="macro-bar"><div class="macro-seg" id="mb-p" style="background:#3B82F6"></div><div class="macro-seg" id="mb-c" style="background:#22C55E"></div><div class="macro-seg" id="mb-g" style="background:#F59E0B"></div></div>
       <div style="display:flex;gap:10px;font-size:10px;color:var(--tx2);margin-top:4px"><span>🔵 Proteínas</span><span>🟢 Carbos</span><span>🟡 Grasas</span></div>
-      <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🤖 Generar menú con IA</button>
+      <button class="btn btn-gr" style="width:100%;margin-top:10px" id="btn-menu-ia" onclick="generarMenuIA()">🍽️ Generar menú semanal</button>
     </div>
     <div id="nut-menu" style="display:none;margin-bottom:10px"></div>
     <div class="fi"><label>Diagnóstico nutricional</label><input type="text" id="f-dg" class="auto" placeholder="Se autorrellena con el IMC — puedes editarlo"></div>
