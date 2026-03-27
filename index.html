@@ -481,7 +481,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <!-- Tabs de contenido -->
     <div class="tabs">
       <button class="tab on" onclick="nsgTab('evolucion',this)">📈 Evolución</button>
-      <button class="tab" onclick="nsgTab('composicion',this)">🧬 Composición corporal</button>
+      <button class="tab" id="tab-composicion" onclick="nsgTab('composicion',this)">🧬 Composición corporal</button>
       <button class="tab" onclick="nsgTab('historial',this)">📋 Historial consultas</button>
     </div>
     <!-- Evolución -->
@@ -754,6 +754,189 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div class="mf">
       <button class="btn btn-gh" onclick="closeModal('mo-ext')">Cancelar</button>
       <button class="btn btn-gold" onclick="registrarExterno()">→ Continuar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal Encuesta Nutricional -->
+<div class="ov" id="mo-encuesta">
+  <div class="mo" style="max-width:800px">
+    <div class="mh" style="background:linear-gradient(135deg,#166534,#0D6B5E)">
+      <div class="mt-mo" style="color:#fff">📋 Encuesta Nutricional — Evaluación Inicial</div>
+      <button class="mc" style="color:#fff" onclick="closeModal('mo-encuesta')">✕</button>
+    </div>
+    <div class="mb" style="max-height:78vh">
+
+      <!-- Datos generales (autorrelleno) -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">👤 Datos generales</div>
+        <div class="g3">
+          <div class="fi" style="margin:0"><label>Nombre</label><input type="text" id="enc-nombre" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Edad</label><input type="text" id="enc-edad" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Sexo</label><input type="text" id="enc-sexo" readonly class="auto"></div>
+        </div>
+        <div class="g2" style="margin-top:10px">
+          <div class="fi" style="margin:0"><label>Fecha</label><input type="text" id="enc-fecha" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Nutrióloga</label><input type="text" id="enc-nut" readonly class="auto"></div>
+        </div>
+      </div>
+
+      <!-- Antecedentes personales -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🏥 Antecedentes personales patológicos</div>
+        <div class="g2">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:8px">Enfermedades / Patologías</div>
+            <div class="fi" style="margin:0 0 8px">
+              <label>¿Presenta alguna enfermedad/patología?</label>
+              <div style="display:flex;gap:12px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-enf" value="Si" onchange="toggleEncBlock('enc-enf-block',this.value==='Si')"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-enf" value="No" checked onchange="toggleEncBlock('enc-enf-block',this.value==='Si')"> No</label>
+              </div>
+            </div>
+            <div id="enc-enf-block" style="display:none">
+              <div class="fi" style="margin:0 0 6px"><label>¿Cuál/es?</label><input type="text" id="enc-enf-cual" placeholder="Diabetes, HAS, hipotiroidismo..."></div>
+              <div class="fi" style="margin:0"><label>¿Desde cuándo?</label><input type="text" id="enc-enf-desde" placeholder="Años, meses..."></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:8px">Problemas gastrointestinales</div>
+            <div class="fi" style="margin:0 0 8px">
+              <label>¿Presenta problemas gastrointestinales?</label>
+              <div style="display:flex;gap:12px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-gi" value="Si" onchange="toggleEncBlock('enc-gi-block',this.value==='Si')"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-gi" value="No" checked onchange="toggleEncBlock('enc-gi-block',this.value==='Si')"> No</label>
+              </div>
+            </div>
+            <div id="enc-gi-block" style="display:none">
+              <div class="fi" style="margin:0 0 6px"><label>¿Cuál/es?</label><input type="text" id="enc-gi-cual" placeholder="Gastritis, colitis, reflujo..."></div>
+              <div class="fi" style="margin:0"><label>¿Desde cuándo?</label><input type="text" id="enc-gi-desde" placeholder="Años, meses..."></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos antropométricos -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">📏 Datos antropométricos</div>
+        <div class="g4">
+          <div class="fi" style="margin:0"><label>Peso (kg)</label><input type="number" step=".1" id="enc-peso" placeholder="70.0"></div>
+          <div class="fi" style="margin:0"><label>Estatura (cm)</label><input type="number" id="enc-talla" placeholder="165" oninput="calcEncIMC()"></div>
+          <div class="fi" style="margin:0"><label>IMC (auto)</label><input type="text" id="enc-imc" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Peso ideal (kg)</label><input type="text" id="enc-pesoideal" readonly class="auto" placeholder="Auto"></div>
+        </div>
+      </div>
+
+      <!-- Estilo de vida -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🌱 Estilo de vida — Alimentación</div>
+        <div class="g2">
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas comidas realiza al día?</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['1-2','3','4-5'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-comidas" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas raciones de fruta al día?</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['Ninguna','1-2','3-4','5 o más'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-fruta" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas raciones de verdura al día?</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['Ninguna','1-2','3-4','5 o más'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-verdura" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Con qué frecuencia consume ultraprocesados?</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['Ninguna','1-2 v/sem','3-4 v/sem','Diario'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-ultra" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidratación -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">💧 Hidratación</div>
+        <div class="g2">
+          <div class="fi" style="margin:0">
+            <label>¿Cuántos vasos de agua al día? (250ml)</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['Menos de 4','4-6','7-8','Más de 8'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-agua" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Con qué frecuencia consume refrescos/bebidas azucaradas?</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              ${['Nunca','1-2 v/sem','3-4 v/sem','Diario'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-refresco" value="${v}"> ${v}</label>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actividad física -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🏃 Actividad física</div>
+        <div class="g2">
+          <div>
+            <div class="fi" style="margin:0 0 10px">
+              <label>¿Realiza actividad física?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-af" value="Si" onchange="toggleEncBlock('enc-af-block',this.value==='Si')"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-af" value="No" checked onchange="toggleEncBlock('enc-af-block',this.value==='Si')"> No</label>
+              </div>
+            </div>
+            <div id="enc-af-block" style="display:none">
+              <div class="fi" style="margin:0 0 8px"><label>¿Qué tipo?</label><input type="text" id="enc-af-tipo" placeholder="Caminar, gym, ciclismo..."></div>
+              <div class="fi" style="margin:0">
+                <label>¿Con qué frecuencia?</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                  ${['1-2 días/sem','3-4 días/sem','5 o más días'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-frec" value="${v}"> ${v}</label>`).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="fi" style="margin:0 0 10px">
+              <label>Tiempo dedicado a AF al día</label>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                ${['Menos de 30 min','30-60 min','Más de 60 min'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-tiempo" value="${v}"> ${v}</label>`).join('')}
+              </div>
+            </div>
+            <div class="fi" style="margin:0">
+              <label>¿Permanece sentado la mayor parte de su jornada?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-sentado" value="Si"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-sentado" value="No"> No</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Percepción -->
+      <div class="vsec vsec-nut">
+        <div class="vsec-title nut">💭 Percepción</div>
+        <div class="fi">
+          <label>¿Qué aspecto considera más difícil de mejorar?</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+            ${['Alimentación','Hidratación','Actividad física','Todos'].map(v=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-percepcion" value="${v}"> ${v}</label>`).join('')}
+          </div>
+        </div>
+        <div class="fi"><label>Observaciones adicionales</label><textarea id="enc-obs" rows="2" placeholder="Notas, hábitos especiales, preferencias alimentarias..."></textarea></div>
+      </div>
+
+    </div><!-- /mb -->
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn btn-gh" onclick="imprimirEncuesta()">🖨️ Imprimir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gh" onclick="closeModal('mo-encuesta')">Cancelar</button>
+        <button class="btn" style="background:linear-gradient(135deg,#166534,#0D6B5E);color:#fff;font-weight:800" onclick="guardarEncuesta()">💾 Guardar encuesta</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1250,10 +1433,62 @@ function generarMenuIA(){
 function renderMenuIAPanel(dias){
   window._menuIA=dias;
   const panel=document.getElementById('nut-menu');
-  let html=`<div class="card cp"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:var(--nv)">🍽️ Menú generado por IA</div><div style="display:flex;gap:6px"><button class="btn btn-gh btn-xs" onclick="generarMenuIA()">🔄</button><button class="btn btn-gh btn-xs" onclick="copiarMenu()">📋 Al plan</button></div></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--nv);color:#fff"><th style="padding:6px 9px;text-align:left">Día</th><th style="padding:6px 9px">Desayuno</th><th style="padding:6px 9px">Col. AM</th><th style="padding:6px 9px">Comida</th><th style="padding:6px 9px">Col. PM</th><th style="padding:6px 9px">Cena</th><th style="padding:6px 9px">kcal</th></tr></thead><tbody>`;
-  dias.forEach((d,i)=>{const bg=i%2===0?'':'background:var(--sf2)';html+=`<tr style="${bg}"><td style="padding:6px 9px;font-weight:700">${d.dia}</td>${['desayuno','colacion_am','comida','colacion_pm','cena'].map(k=>`<td style="padding:6px 9px;text-align:center" ondblclick="this.contentEditable='true';this.focus()" onblur="this.contentEditable='false'">${d[k]||'—'}</td>`).join('')}<td style="padding:6px 9px;text-align:center;font-weight:700">${d.kcal_total||'—'}</td></tr>`;});
-  html+='</tbody></table></div></div>';
-  panel.innerHTML=html;panel.style.display='block';
+  const ICONOS={desayuno:'🌅',colacion_am:'🍎',comida:'🍽️',colacion_pm:'🥜',cena:'🌙'};
+  const LABELS={desayuno:'Desayuno',colacion_am:'Colación AM',comida:'Comida',colacion_pm:'Colación PM',cena:'Cena'};
+  const COLORS={desayuno:'#F59E0B',colacion_am:'#10B981',comida:'#1D3F8A',colacion_pm:'#8B5CF6',cena:'#0D6B5E'};
+  const BGS={desayuno:'#FEF3C7',colacion_am:'#D1FAE5',comida:'#DBEAFE',colacion_pm:'#EDE9FE',cena:'#D1FAE5'};
+
+  // KPI del plan
+  const kcalProm=Math.round(dias.reduce((s,d)=>s+(d.kcal_total||0),0)/dias.length);
+
+  let out=`<div style="background:var(--sf);border:1.5px solid var(--gr4);border-radius:14px;overflow:hidden;margin-bottom:12px">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#166534,#0D6B5E);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#fff">🍽️ Plan alimentario semanal</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.75);margin-top:2px">Promedio: ${kcalProm} kcal/día · Doble clic en cualquier celda para editar</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="generarMenuIA()">🔄 Regenerar</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="copiarMenu()">📋 Al plan</button>
+      </div>
+    </div>
+    <!-- Leyenda tiempos -->
+    <div style="display:flex;gap:6px;padding:10px 16px;background:var(--sf2);flex-wrap:wrap;border-bottom:1px solid var(--bor)">
+      ${Object.entries(LABELS).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:${COLORS[k]}"><span style="background:${BGS[k]};padding:2px 7px;border-radius:10px">${ICONOS[k]} ${v}</span></span>`).join('')}
+    </div>
+    <!-- Días -->
+    <div style="padding:12px 16px">`;
+
+  dias.forEach((d,i)=>{
+    const isWeekend=i>=5;
+    out+=`<div style="margin-bottom:12px;border:1.5px solid ${isWeekend?'var(--gold2)':'var(--bor)'};border-radius:12px;overflow:hidden">
+      <!-- Día header -->
+      <div style="background:${isWeekend?'linear-gradient(135deg,#8B6914,#B8962E)':'linear-gradient(135deg,#0F2942,#1D3F8A)'};padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:800;color:#fff">${isWeekend?'🌟':''} ${d.dia}</span>
+        <span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;padding:2px 9px;border-radius:10px">${d.kcal_total||'—'} kcal</span>
+      </div>
+      <!-- Tiempos -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0">
+        ${['desayuno','colacion_am','comida','colacion_pm','cena'].map((k,j)=>`
+        <div style="padding:10px 12px;border-right:1px solid var(--bor);border-bottom:1px solid var(--bor);${j===4?'border-right:none':''}" >
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px">
+            <span style="font-size:14px">${ICONOS[k]}</span>
+            <span style="font-size:9px;font-weight:700;text-transform:uppercase;color:${COLORS[k]}">${LABELS[k]}</span>
+          </div>
+          <div style="font-size:11px;color:var(--tx);line-height:1.4;min-height:32px"
+            ondblclick="this.contentEditable='true';this.style.background='var(--gold3)';this.focus()"
+            onblur="this.contentEditable='false';this.style.background=''"
+          >${d[k]||'—'}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  out+=`</div></div>`;
+  panel.innerHTML=out;
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function copiarMenu(){if(!window._menuIA)return;let txt='MENÚ SEMANAL:\n';window._menuIA.forEach(d=>{txt+=d.dia+': '+d.desayuno+' / '+d.comida+' / '+d.cena+'\n';});const el=document.getElementById('f-plan');if(el){el.value=(el.value?el.value+'\n\n':'')+txt;toast('✅ Menú copiado al plan','ok');}}
 
@@ -2107,7 +2342,7 @@ function buildCapFormNut(emp){
     <div class="cap-title nut">🥗 Consulta Nutricional</div>
     <div class="g2">
       <div class="fi" style="margin:0"><label>Tipo</label>
-        <select id="f-tipo"><option>Evaluación inicial</option><option>Seguimiento</option><option>Control</option></select></div>
+        <select id="f-tipo" onchange="checkEncuesta(this.value)"><option>Evaluación inicial</option><option>Seguimiento</option><option>Control</option></select></div>
       <div class="fi" style="margin:0"><label>Objetivo del plan *</label>
         <select id="f-obj" onchange="calcMacrosAuto()">
           <option value="">— Seleccionar —</option>
@@ -2119,6 +2354,10 @@ function buildCapFormNut(emp){
           <option value="embarazo">🤰 Embarazo/lactancia</option>
           <option value="habitos">🌱 Hábitos generales</option>
         </select></div>
+    </div>
+    <div id="enc-cta-nut" style="background:linear-gradient(135deg,rgba(22,101,52,.08),rgba(13,107,94,.05));border:1.5px solid var(--gr4);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;color:var(--gr);font-weight:600">📋 Evaluación inicial — Se recomienda completar la encuesta nutricional</div>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#0D6B5E);color:#fff" onclick="abrirEncuesta()">📋 Abrir encuesta</button>
     </div>
     <div class="sec-t" style="margin-top:10px">Mediciones antropométricas</div>
     <div class="g4">
@@ -2232,9 +2471,9 @@ function buscarNutSeg(val){
   const drop=document.getElementById('nsg-drop');
   if(!val||val.length<2){drop.classList.remove('show');return;}
   const lc=val.toLowerCase();
-  // Only show patients that have nut consultations
-  const noEmpsNut=[...new Set(CONS.filter(c=>c.tipoAtencion==='NUT').map(c=>String(c.noEmp||'')))];
-  const matches=HC.filter(e=>(String(e.noEmp||'').toLowerCase().includes(lc)||String(e.nombre||'').toLowerCase().includes(lc))&&noEmpsNut.includes(String(e.noEmp||''))).slice(0,6);
+  // Show all HC patients — system will detect if they have NUT consultations
+  const noEmpsNut=new Set(CONS.filter(c=>c.tipoAtencion==='NUT').map(c=>String(c.noEmp||'')));
+  const matches=HC.filter(e=>String(e.noEmp||'').toLowerCase().includes(lc)||String(e.nombre||'').toLowerCase().includes(lc)).slice(0,6);
   // Also search directly in NUT cons if not in HC
   const conMatches=CONS.filter(c=>c.tipoAtencion==='NUT'&&(String(c.noEmp||'').toLowerCase().includes(lc)||String(c.nombre||'').toLowerCase().includes(lc))).slice(0,4);
   if(!matches.length&&!conMatches.length){
@@ -2253,8 +2492,55 @@ function selNutSeg(noEmp, nombre){
   document.getElementById('nsg-q').value=nombre+' (No.'+noEmp+')';
   _nsgEmp={noEmp,nombre};
   const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{noEmp,nombre};
-  // Header
-  document.getElementById('nsg-header').innerHTML=`
+
+  // Analizar historial de consultas nutricionales
+  const lc=String(noEmp||'').toLowerCase();
+  const nutCons=CONS.filter(c=>c.tipoAtencion==='NUT'&&String(c.noEmp||'').toLowerCase()===lc)
+    .sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
+  const total=nutCons.length;
+  const tieneComposicion=nutCons.some(c=>c.grasaCorporal||c.masaMagra||c.aguaCorporal||c.grasaVisceral||c.grasa||c.magra||c.agua||c.gvisceral);
+  const enSeguimiento=total>=2;
+  const ultimaCons=nutCons[total-1];
+  const primeraCons=nutCons[0];
+
+  // Badge de estado
+  let estadoBadge='';
+  if(total===0){
+    estadoBadge=`<div class="alert alert-am" style="margin-bottom:10px">
+      <span style="font-size:16px">⚠️</span>
+      <div><strong>Sin consultas nutricionales registradas</strong><br>
+      <span style="font-size:11px">Este paciente aún no tiene valoraciones de nutrición. Captura la primera consulta para comenzar el seguimiento.</span></div>
+    </div>`;
+  } else if(total===1){
+    estadoBadge=`<div class="alert alert-gr" style="margin-bottom:10px">
+      <span style="font-size:16px">📋</span>
+      <div><strong>1 consulta registrada — Inicio de seguimiento</strong><br>
+      <span style="font-size:11px">Primera consulta: ${primeraCons.fecha||'—'} · ${primeraCons.imcCategoria||primeraCons.diagnostico||'—'}<br>
+      Captura una segunda valoración para activar las gráficas comparativas.</span></div>
+    </div>`;
+  } else {
+    const difPeso=((parseFloat(ultimaCons.peso)||0)-(parseFloat(primeraCons.peso)||0)).toFixed(1);
+    const positivo=parseFloat(difPeso)<0;
+    estadoBadge=`<div style="background:linear-gradient(135deg,rgba(22,101,52,.08),rgba(13,107,94,.05));border:1.5px solid var(--gr4);border-radius:12px;padding:12px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">📈</span>
+          <div>
+            <div style="font-weight:800;color:var(--gr);font-size:13px">En seguimiento activo</div>
+            <div style="font-size:11px;color:var(--tx2)">${total} consultas · Primera: ${primeraCons.fecha||'—'} · Última: ${ultimaCons.fecha||'—'}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:${positivo?'var(--gr2)':'var(--rd3)'};color:${positivo?'var(--gr)':'var(--rd)'};padding:4px 12px;border-radius:10px;font-size:12px;font-weight:800">${difPeso>0?'+':''}${difPeso} kg</span>
+          <span class="pill pgr">${total} consultas</span>
+          ${tieneComposicion?'<span class="pill ptl">🧬 Con composición corporal</span>':'<span class="pill pgy">Sin composición corporal</span>'}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Header del paciente
+  document.getElementById('nsg-header').innerHTML=estadoBadge+`
     <div class="ec">
       <div class="ec-name">${emp.nombre} <span class="ec-tag">No. ${emp.noEmp}</span>${emp.genero?`<span class="ec-tag">${emp.genero}</span>`:''}</div>
       <div class="ec-grid">
@@ -2262,10 +2548,34 @@ function selNutSeg(noEmp, nombre){
         <div class="ec-f"><label>Depto</label><span>${emp.depto||'—'}</span></div>
         <div class="ec-f"><label>Edad</label><span>${emp.edad||'—'} años</span></div>
         <div class="ec-f"><label>Género</label><span>${emp.genero||'—'}</span></div>
+        <div class="ec-f"><label>Peso actual</label><span>${ultimaCons?ultimaCons.peso+' kg':'—'}</span></div>
+        <div class="ec-f"><label>IMC actual</label><span>${ultimaCons?ultimaCons.imc||'—':'—'}</span></div>
       </div>
     </div>`;
+
   document.getElementById('nsg-panel').style.display='block';
-  nsgTab('evolucion',document.querySelector('#sc-nutsg .tab'));
+
+  // Deshabilitar tabs si no hay suficientes datos
+  const tabComp=document.getElementById('tab-composicion');
+  if(tabComp){
+    if(!tieneComposicion){
+      tabComp.style.opacity='.4';
+      tabComp.title='Sin datos de composición corporal';
+    } else {
+      tabComp.style.opacity='1';
+      tabComp.title='';
+    }
+  }
+
+  if(total===0){
+    // No hay datos — no mostrar gráficas
+    document.getElementById('nsg-evolucion').innerHTML=`<div class="empty"><div class="empty-i">📊</div>Sin datos para graficar.<br><small style="font-size:11px;color:var(--tx3)">Captura la primera consulta nutricional.</small></div>`;
+    document.getElementById('nsg-composicion').innerHTML=`<div class="empty"><div class="empty-i">🧬</div>Sin datos de composición corporal.</div>`;
+    document.getElementById('nsg-historial').innerHTML=`<div class="empty"><div class="empty-i">📋</div>Sin consultas registradas.</div>`;
+    nsgTab('evolucion',document.querySelector('#sc-nutseg .tab'));
+  } else {
+    nsgTab('evolucion',document.querySelector('#sc-nutseg .tab'));
+  }
 }
 
 function nsgTab(tab,btn){
@@ -2462,6 +2772,198 @@ function renderNsgHistorial(){
       ${r.recomendaciones||r.plan?`<div style="font-size:11px;background:var(--sf2);border-radius:6px;padding:8px;color:var(--tx2)">${(r.recomendaciones||r.plan||'').slice(0,200)}</div>`:''}
       <div style="font-size:10px;color:var(--tx3);margin-top:6px">${r.registradoPor||'—'}</div>
     </div>`).join('');
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// ENCUESTA NUTRICIONAL
+// ════════════════════════════════════════════════════════════════
+function checkEncuesta(tipo){
+  const cta=document.getElementById('enc-cta-nut');
+  if(cta) cta.style.display=tipo==='Evaluación inicial'?'flex':'none';
+}
+
+function toggleEncBlock(id,show){
+  const el=document.getElementById(id);
+  if(el) el.style.display=show?'block':'none';
+}
+
+function calcEncIMC(){
+  const p=parseFloat(document.getElementById('enc-peso')?.value)||0;
+  const t=parseFloat(document.getElementById('enc-talla')?.value)||0;
+  if(p&&t){
+    const imc=+(p/(t/100)**2).toFixed(1);
+    const el=document.getElementById('enc-imc');if(el)el.value=imc;
+    // Peso ideal — fórmula Devine
+    const emp=_capEmp||_empActual||{};
+    const esF=(emp.genero||'').toLowerCase().includes('f');
+    const cm=t;
+    const pi=esF?45.5+0.9*(cm-152.4):50+0.9*(cm-152.4);
+    const pie=document.getElementById('enc-pesoideal');
+    if(pie)pie.value=Math.round(Math.max(40,pi))+' kg';
+  }
+}
+
+function abrirEncuesta(){
+  const emp=_capEmp||_empActual;
+  if(!emp){toast('Selecciona un empleado primero','err');return;}
+  // Autorrelleno
+  const sv2e=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
+  sv2e('enc-nombre',emp.nombre);
+  sv2e('enc-edad',emp.edad?emp.edad+' años':'—');
+  sv2e('enc-sexo',emp.genero||'—');
+  sv2e('enc-fecha',new Date().toLocaleDateString('es-MX'));
+  sv2e('enc-nut',USER?USER.nombre:'');
+  // Pre-fill peso/talla from form if already entered
+  const peso=g('f-peso');const talla=g('f-talla');
+  if(peso){sv2e('enc-peso',peso);sv2e('enc-talla',talla);calcEncIMC();}
+  openModal('mo-encuesta');
+}
+
+function getRadioVal(name){
+  const el=document.querySelector('input[name="'+name+'"]:checked');
+  return el?el.value:'';
+}
+
+async function guardarEncuesta(){
+  const emp=_capEmp||_empActual;
+  if(!emp){toast('Sin empleado','err');return;}
+  const encuesta={
+    noEmp:emp.noEmp, nombre:emp.nombre, planta:emp.planta,
+    fecha:new Date().toLocaleDateString('es-MX'),
+    nutriologa:USER?USER.nombre:'',
+    edad:g('enc-edad'), sexo:g('enc-sexo'),
+    // Antecedentes
+    tieneEnfermedad:getRadioVal('enc-enf'),
+    cualEnfermedad:g('enc-enf-cual'), desdeEnfermedad:g('enc-enf-desde'),
+    tieneGI:getRadioVal('enc-gi'),
+    cualGI:g('enc-gi-cual'), desdeGI:g('enc-gi-desde'),
+    // Antropometría
+    peso:g('enc-peso'), talla:g('enc-talla'), imc:g('enc-imc'), pesoIdeal:g('enc-pesoideal'),
+    // Alimentación
+    comidasDia:getRadioVal('enc-comidas'),
+    racionesFruta:getRadioVal('enc-fruta'),
+    racionesVerdura:getRadioVal('enc-verdura'),
+    ultraprocesados:getRadioVal('enc-ultra'),
+    // Hidratación
+    vasosAgua:getRadioVal('enc-agua'),
+    refrescos:getRadioVal('enc-refresco'),
+    // Actividad física
+    realizaAF:getRadioVal('enc-af'),
+    tipoAF:g('enc-af-tipo'),
+    frecuenciaAF:getRadioVal('enc-af-frec'),
+    tiempoAF:getRadioVal('enc-af-tiempo'),
+    sentadoJornada:getRadioVal('enc-sentado'),
+    // Percepción
+    percepcion:getRadioVal('enc-percepcion'),
+    observaciones:g('enc-obs')
+  };
+
+  setSyncDot('busy');
+  const r=await gasPost({action:'saveEncuesta',val:encuesta});
+  setSyncDot(r.ok?'ok':'err');
+  toast(r.ok?'✅ Encuesta guardada':'⚠️ Guardada localmente','ok');
+
+  // Transfer peso/talla back to main form if empty
+  if(!g('f-peso')&&encuesta.peso){
+    const pe=document.getElementById('f-peso');if(pe)pe.value=encuesta.peso;
+    const te=document.getElementById('f-talla');if(te)te.value=encuesta.talla;
+    calcNutAuto();
+  }
+  closeModal('mo-encuesta');
+}
+
+function imprimirEncuesta(){
+  const emp=_capEmp||_empActual||{};
+  const w=window.open('','_blank','width=860,height:1100');if(!w){toast('Popup bloqueado','err');return;}
+  const getRad=name=>{const el=document.querySelector('input[name="'+name+'"]:checked');return el?el.value:'';};
+  const gEl=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const chk=(val,opt)=>val===opt?'☑':'☐';
+
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Encuesta Nutricional<\/title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;padding:20px}
+    @page{size:letter;margin:12mm}@media print{.no-print{display:none}}
+    h1{font-size:28px;font-weight:900}.italic{font-style:italic}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #000;padding-bottom:8px;margin-bottom:12px}
+    .row{display:flex;gap:16px;margin-bottom:10px}.field{flex:1}
+    .field label{font-size:9px;text-transform:uppercase;color:#666;display:block}
+    .field .val{border-bottom:1px solid #000;min-height:16px;padding:1px 4px;font-size:12px;font-weight:600}
+    .sec{margin-bottom:12px}.sec-t{font-style:italic;font-weight:600;font-size:12px;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px}td,th{border:1px solid #666;padding:5px 8px;font-size:11px;vertical-align:top}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .opts{display:flex;flex-direction:column;gap:3px}
+    .opts span{font-size:11px}
+    .btn-print{position:fixed;bottom:16px;right:16px;background:#166534;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px}
+  <\/style><\/head><body>
+  <div class="hdr">
+    <div><h1>Encuesta <span class="italic">nutricional<\/span><\/h1><\/div>
+    <div style="font-size:11px">FECHA: <strong>${new Date().toLocaleDateString('es-MX')}<\/strong><\/div>
+  <\/div>
+  <div class="row">
+    <div class="field"><label>Nombre<\/label><div class="val">${gEl('enc-nombre')}<\/div><\/div>
+    <div class="field" style="max-width:100px"><label>Edad<\/label><div class="val">${gEl('enc-edad')}<\/div><\/div>
+    <div class="field" style="max-width:100px"><label>Sexo<\/label><div class="val">${gEl('enc-sexo')}<\/div><\/div>
+  <\/div>
+  <div class="sec">
+    <div class="sec-t">Antecedentes personales patológicos 🌸<\/div>
+    <div class="grid2">
+      <table><tr><td colspan="2" style="font-weight:700">Presenta alguna enfermedad/patología: ${getRad('enc-enf')||'—'}<\/td><\/tr>
+        <tr><td>¿Cuál/es?<\/td><td>${gEl('enc-enf-cual')||'&nbsp;'}<\/td><\/tr>
+        <tr><td>¿Desde cuándo?<\/td><td>${gEl('enc-enf-desde')||'&nbsp;'}<\/td><\/tr><\/table>
+      <table><tr><td colspan="2" style="font-weight:700">Presenta problemas gastrointestinales: ${getRad('enc-gi')||'—'}<\/td><\/tr>
+        <tr><td>¿Cuál/es?<\/td><td>${gEl('enc-gi-cual')||'&nbsp;'}<\/td><\/tr>
+        <tr><td>¿Desde cuándo?<\/td><td>${gEl('enc-gi-desde')||'&nbsp;'}<\/td><\/tr><\/table>
+    <\/div>
+  <\/div>
+  <div class="sec">
+    <div class="sec-t">Datos antropométricos 🌸 (No Contestar)<\/div>
+    <table><tr>
+      <th>Peso<\/th><td>${gEl('enc-peso')} kg<\/td>
+      <th>Estatura<\/th><td>${gEl('enc-talla')} cm<\/td>
+      <th>IMC<\/th><td>${gEl('enc-imc')}<\/td>
+      <th>Peso ideal<\/th><td>${gEl('enc-pesoideal')}<\/td>
+    <\/tr><\/table>
+  <\/div>
+  <div class="sec">
+    <div class="sec-t">Estilo de vida 🌸<\/div>
+    <div class="grid2">
+      <div>
+        <div style="font-weight:700;margin-bottom:6px;text-decoration:underline">Alimentación<\/div>
+        <table>
+          <tr><td>¿Cuántas comidas al día?<\/td><td class="opts"><span>${chk(getRad('enc-comidas'),'1-2')} 1-2<\/span><span>${chk(getRad('enc-comidas'),'3')} 3<\/span><span>${chk(getRad('enc-comidas'),'4-5')} 4-5<\/span><\/td><\/tr>
+          <tr><td>¿Raciones de fruta/día?<\/td><td class="opts"><span>${chk(getRad('enc-fruta'),'Ninguna')} Ninguna<\/span><span>${chk(getRad('enc-fruta'),'1-2')} 1-2<\/span><span>${chk(getRad('enc-fruta'),'3-4')} 3-4<\/span><span>${chk(getRad('enc-fruta'),'5 o más')} 5+<\/span><\/td><\/tr>
+          <tr><td>¿Raciones de verdura/día?<\/td><td class="opts"><span>${chk(getRad('enc-verdura'),'Ninguna')} Ninguna<\/span><span>${chk(getRad('enc-verdura'),'1-2')} 1-2<\/span><span>${chk(getRad('enc-verdura'),'3-4')} 3-4<\/span><span>${chk(getRad('enc-verdura'),'5 o más')} 5+<\/span><\/td><\/tr>
+          <tr><td>¿Frecuencia ultraprocesados?<\/td><td class="opts"><span>${chk(getRad('enc-ultra'),'Ninguna')} Ninguna<\/span><span>${chk(getRad('enc-ultra'),'1-2 v/sem')} 1-2 v/sem<\/span><span>${chk(getRad('enc-ultra'),'3-4 v/sem')} 3-4 v/sem<\/span><span>${chk(getRad('enc-ultra'),'Diario')} Diario<\/span><\/td><\/tr>
+        <\/table>
+      <\/div>
+      <div>
+        <div style="font-weight:700;margin-bottom:6px;text-decoration:underline">Hidratación<\/div>
+        <table>
+          <tr><td>¿Vasos de agua/día?<\/td><td class="opts"><span>${chk(getRad('enc-agua'),'Menos de 4')} Menos de 4<\/span><span>${chk(getRad('enc-agua'),'4-6')} 4-6<\/span><span>${chk(getRad('enc-agua'),'7-8')} 7-8<\/span><span>${chk(getRad('enc-agua'),'Más de 8')} Más de 8<\/span><\/td><\/tr>
+          <tr><td>¿Frecuencia refrescos?<\/td><td class="opts"><span>${chk(getRad('enc-refresco'),'Nunca')} Nunca<\/span><span>${chk(getRad('enc-refresco'),'1-2 v/sem')} 1-2 v/sem<\/span><span>${chk(getRad('enc-refresco'),'3-4 v/sem')} 3-4 v/sem<\/span><span>${chk(getRad('enc-refresco'),'Diario')} Diario<\/span><\/td><\/tr>
+        <\/table>
+        <div style="font-weight:700;margin:8px 0 6px;text-decoration:underline">Actividad física<\/div>
+        <table>
+          <tr><td>¿Realiza AF?<\/td><td>${chk(getRad('enc-af'),'Si')} Sí &nbsp; ${chk(getRad('enc-af'),'No')} No<\/td><\/tr>
+          <tr><td>¿Qué tipo?<\/td><td>${gEl('enc-af-tipo')||'&nbsp;'}<\/td><\/tr>
+          <tr><td>¿Frecuencia?<\/td><td class="opts"><span>${chk(getRad('enc-af-frec'),'1-2 días/sem')} 1-2d/sem<\/span><span>${chk(getRad('enc-af-frec'),'3-4 días/sem')} 3-4d/sem<\/span><span>${chk(getRad('enc-af-frec'),'5 o más días')} 5+d<\/span><\/td><\/tr>
+          <tr><td>¿Tiempo AF/día?<\/td><td class="opts"><span>${chk(getRad('enc-af-tiempo'),'Menos de 30 min')} -30min<\/span><span>${chk(getRad('enc-af-tiempo'),'30-60 min')} 30-60min<\/span><span>${chk(getRad('enc-af-tiempo'),'Más de 60 min')} +60min<\/span><\/td><\/tr>
+          <tr><td>¿Sentado mayor parte jornada?<\/td><td>${chk(getRad('enc-sentado'),'Si')} Sí &nbsp; ${chk(getRad('enc-sentado'),'No')} No<\/td><\/tr>
+        <\/table>
+      <\/div>
+    <\/div>
+    <table style="margin-top:8px"><tr><td style="width:200px">¿Aspecto más difícil de mejorar?<\/td>
+      <td class="opts" style="display:flex;flex-direction:row;gap:12px">${['Alimentación','Hidratación','Actividad física','Todos'].map(v=>`<span>${chk(getRad('enc-percepcion'),v)} ${v}<\/span>`).join('')}<\/td><\/tr><\/table>
+    ${gEl('enc-obs')?`<div style="margin-top:8px"><strong>Observaciones:<\/strong> ${gEl('enc-obs')}<\/div>`:''}
+  <\/div>
+  <div style="margin-top:30px;display:flex;justify-content:space-between">
+    <div style="text-align:center;border-top:1px solid #000;padding-top:4px;width:200px;font-size:10px">${gEl('enc-nut')||'Nutrióloga'}<br>AUNA Salud Ocupacional<\/div>
+    <div style="text-align:center;border-top:1px solid #000;padding-top:4px;width:200px;font-size:10px">Firma del paciente<br>${gEl('enc-nombre')||'—'}<\/div>
+  <\/div>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir<\/button>
+  <\/body><\/html>`);
+  w.document.close();setTimeout(()=>w.print(),600);
 }
 
 // ════════════════════════════════════════════════════════════════
