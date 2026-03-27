@@ -253,6 +253,7 @@ body {
     <div class="card cp">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div class="sec-t" style="margin:0">📋 Historial clínico unificado</div>
+       <button class="btn btn-nv" style="background:var(--bl); color:white; margin-right:10px" onclick="abrirCapturaNueva()">➕ Nueva Consulta</button>
         <button class="btn btn-gh btn-xs" onclick="actualizarExpedienteBtn()">✏️ Editar expediente</button>
       </div>
       <div class="tabs">
@@ -1653,8 +1654,177 @@ async function guardarConsultaNueva() {
         go('inicio');
     }
 }
+// Esta función prepara la pantalla de captura y nos lleva ahí
+function abrirCapturaNueva() {
+    if (!_empActual) return toast("Busca un empleado primero", "err");
 
+    // Limpiamos los campos del formulario para que no tengan datos viejos
+    const form = document.getElementById('form-dinamico-captura');
+    if (form) form.innerHTML = ''; 
+
+    // Cambiamos a la pantalla de captura
+    go('captura'); 
+
+    // Activamos las alertas de frecuencia (colores)
+    checkFrecuencia(_empActual.noEmp);
+
+    // Si tiene alergias, ponemos el cuadro amarillo
+    if (_empActual.alergias) {
+        document.getElementById('cap-alertas-alergias').innerHTML = 
+        `<div class="alergia-alarm">⚠️ ALERTA: ALERGIAS REGISTRADAS - ${_empActual.alergias}</div>`;
+    } else {
+        document.getElementById('cap-alertas-alergias').innerHTML = '';
+    }
+
+    // Dibujamos el formulario (médico, enfermera o nutrióloga)
+    renderPanelCaptura(_empActual); 
+    
+    // Ponemos la fecha y hora de hoy automáticamente
+    const ahora = new Date();
+    if(document.getElementById('c-fecha')) document.getElementById('c-fecha').value = ahora.toISOString().split('T')[0];
+    if(document.getElementById('c-hora')) document.getElementById('c-hora').value = ahora.toTimeString().slice(0,5);
+}
+  // --- FUNCIÓN MAESTRA PARA DIBUJAR EL FORMULARIO SEGÚN EL ROL ---
+function renderPanelCaptura(emp) {
+  const panel = document.getElementById('form-dinamico-captura');
+  if (!panel) return;
+
+  if (USER.rol === 'enfermeria') panel.innerHTML = buildFormEnf(emp);
+  else if (USER.rol === 'medico') panel.innerHTML = buildFormMed(emp);
+  else if (USER.rol === 'nutricion') panel.innerHTML = buildFormNut(emp);
+}
+
+// --- FORMULARIO DE ENFERMERÍA ---
+function buildFormEnf(emp) {
+  return `
+  <div class="g2">
+    <div class="fi"><label>Tipo de consulta</label><select id="f-tipo"><option>Enfermedad general</option><option>Riesgo de trabajo</option><option>Urgencia</option></select></div>
+    <div class="fi"><label>Signos Vitales</label><input type="text" id="f-ta" placeholder="T/A (ej. 120/80)"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico / CIE-10</label><input type="text" id="f-dg" placeholder="Escribe el diagnóstico aquí..."></div>
+  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3"></textarea></div>
+  <div class="card" style="background:var(--rd2); padding:15px">
+    <div class="sec-t" style="color:var(--rd)">🏥 Sección de Incapacidad (Opcional)</div>
+    <div class="g3">
+      <div class="fi"><label>Fecha Inicio</label><input type="date" id="f-ii" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Días</label><input type="number" id="f-ds" min="1" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Fecha Retorno</label><input type="date" id="f-if" readonly style="background:#eee"></div>
+    </div>
+    <div class="fi"><label>Tipo de Incapacidad</label><select id="f-incap"><option value="No">Ninguna</option><option>Enfermedad general</option><option>Accidente trabajo</option><option>Maternidad</option></select></div>
+  </div>`;
+}
+
+// --- FORMULARIO MÉDICO ---
+function buildFormMed(emp) {
+  return `
+  <div class="g2">
+    <div class="fi"><label>Motivo de Consulta</label><input type="text" id="f-motivo"></div>
+    <div class="fi"><label>Signos Vitales</label><input type="text" id="f-ta" placeholder="120/80"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico Clínico</label><input type="text" id="f-dg"></div>
+  <div class="fi"><label>Plan de Tratamiento y Medicación</label><textarea id="f-plan" rows="4"></textarea></div>
+  <div class="card" style="background:var(--rd2); padding:15px">
+    <div class="sec-t" style="color:var(--rd)">🏥 Incapacidad Médica</div>
+    <div class="g3">
+      <div class="fi"><label>Fecha Inicio</label><input type="date" id="f-ii" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Días</label><input type="number" id="f-ds" min="1" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Fecha Retorno</label><input type="date" id="f-if" readonly style="background:#eee"></div>
+    </div>
+  </div>`;
+}
+
+// --- FORMULARIO DE NUTRICIÓN (Con seguimiento) ---
+function buildFormNut(emp) {
+  return `
+  <div class="sec-t">🥗 Evaluación Antropométrica</div>
+  <div class="g4">
+    <div class="fi"><label>Peso (kg)</label><input type="number" step="0.1" id="f-peso"></div>
+    <div class="fi"><label>Talla (cm)</label><input type="number" id="f-talla"></div>
+    <div class="fi"><label>% Grasa Corporal</label><input type="number" step="0.1" id="f-grasa"></div>
+    <div class="fi"><label>Grasa Visceral</label><input type="number" id="f-visc"></div>
+    <div class="fi"><label>% Agua</label><input type="number" step="0.1" id="f-agua"></div>
+    <div class="fi"><label>Masa Magra (kg)</label><input type="number" step="0.1" id="f-magra"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico Nutricional</label><input type="text" id="f-dg"></div>
+  <div class="fi"><label>Plan Alimenticio / Recomendaciones</label><textarea id="f-plan" rows="4"></textarea></div>`;
+}
+  function go(id) {
+  // Ocultamos todas las pantallas
+  document.querySelectorAll('.sc').forEach(s => s.classList.remove('on'));
+  // Quitamos el color de "activo" a los botones del menú
+  document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
+  
+  // Mostramos la pantalla que queremos
+  const sc = document.getElementById('sc-' + id);
+  if (sc) sc.classList.add('on');
+  
+  // Pintamos el botón del menú correspondiente
+  const tb = document.getElementById('tb-' + id);
+  if (tb) tb.classList.add('on');
+}
+  // --- FUNCIÓN MAESTRA PARA DIBUJAR EL FORMULARIO SEGÚN EL ROL ---
+function renderPanelCaptura(emp) {
+  const panel = document.getElementById('form-dinamico-captura');
+  if (!panel) return;
+
+  if (USER.rol === 'enfermeria') panel.innerHTML = buildFormEnf(emp);
+  else if (USER.rol === 'medico') panel.innerHTML = buildFormMed(emp);
+  else if (USER.rol === 'nutricion') panel.innerHTML = buildFormNut(emp);
+}
+
+// --- FORMULARIO DE ENFERMERÍA ---
+function buildFormEnf(emp) {
+  return `
+  <div class="g2">
+    <div class="fi"><label>Tipo de consulta</label><select id="f-tipo"><option>Enfermedad general</option><option>Riesgo de trabajo</option><option>Urgencia</option></select></div>
+    <div class="fi"><label>Signos Vitales</label><input type="text" id="f-ta" placeholder="T/A (ej. 120/80)"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico / CIE-10</label><input type="text" id="f-dg" placeholder="Escribe el diagnóstico aquí..."></div>
+  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3"></textarea></div>
+  <div class="card" style="background:var(--rd2); padding:15px">
+    <div class="sec-t" style="color:var(--rd)">🏥 Sección de Incapacidad (Opcional)</div>
+    <div class="g3">
+      <div class="fi"><label>Fecha Inicio</label><input type="date" id="f-ii" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Días</label><input type="number" id="f-ds" min="1" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Fecha Retorno</label><input type="date" id="f-if" readonly style="background:#eee"></div>
+    </div>
+    <div class="fi"><label>Tipo de Incapacidad</label><select id="f-incap"><option value="No">Ninguna</option><option>Enfermedad general</option><option>Accidente trabajo</option><option>Maternidad</option></select></div>
+  </div>`;
+}
+
+// --- FORMULARIO MÉDICO ---
+function buildFormMed(emp) {
+  return `
+  <div class="g2">
+    <div class="fi"><label>Motivo de Consulta</label><input type="text" id="f-motivo"></div>
+    <div class="fi"><label>Signos Vitales</label><input type="text" id="f-ta" placeholder="120/80"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico Clínico</label><input type="text" id="f-dg"></div>
+  <div class="fi"><label>Plan de Tratamiento y Medicación</label><textarea id="f-plan" rows="4"></textarea></div>
+  <div class="card" style="background:var(--rd2); padding:15px">
+    <div class="sec-t" style="color:var(--rd)">🏥 Incapacidad Médica</div>
+    <div class="g3">
+      <div class="fi"><label>Fecha Inicio</label><input type="date" id="f-ii" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Días</label><input type="number" id="f-ds" min="1" oninput="autoCalcIncapacidad()"></div>
+      <div class="fi"><label>Fecha Retorno</label><input type="date" id="f-if" readonly style="background:#eee"></div>
+    </div>
+  </div>`;
+}
+
+// --- FORMULARIO DE NUTRICIÓN (Con seguimiento) ---
+function buildFormNut(emp) {
+  return `
+  <div class="sec-t">🥗 Evaluación Antropométrica</div>
+  <div class="g4">
+    <div class="fi"><label>Peso (kg)</label><input type="number" step="0.1" id="f-peso"></div>
+    <div class="fi"><label>Talla (cm)</label><input type="number" id="f-talla"></div>
+    <div class="fi"><label>% Grasa Corporal</label><input type="number" step="0.1" id="f-grasa"></div>
+    <div class="fi"><label>Grasa Visceral</label><input type="number" id="f-visc"></div>
+    <div class="fi"><label>% Agua</label><input type="number" step="0.1" id="f-agua"></div>
+    <div class="fi"><label>Masa Magra (kg)</label><input type="number" step="0.1" id="f-magra"></div>
+  </div>
+  <div class="fi"><label>Diagnóstico Nutricional</label><input type="text" id="f-dg"></div>
+  <div class="fi"><label>Plan Alimenticio / Recomendaciones</label><textarea id="f-plan" rows="4"></textarea></div>`;
+}
 </script> <!-- Esta es la etiqueta de cierre que ya tienes en tu archivo -->
-
-</script>
 </body></html>
