@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+}<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -741,6 +741,229 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   </div>
 </div>
 
+
+<!-- Modal Empleado Externo -->
+<div class="ov" id="mo-ext">
+  <div class="mo" style="max-width:460px">
+    <div class="mh"><div class="mt-mo">👤 Empleado externo / visitante</div><button class="mc" onclick="closeModal('mo-ext')">✕</button></div>
+    <div class="mb">
+      <div class="fi"><label>Nombre completo *</label><input type="text" id="ext-nombre" placeholder="Nombre del visitante..." list="ext-nombres-list"><datalist id="ext-nombres-list"></datalist></div>
+      <div class="fi"><label>Empresa / Compañía *</label><input type="text" id="ext-empresa" placeholder="Empresa..." list="ext-empresas-list"><datalist id="ext-empresas-list"></datalist></div>
+      <div class="fi"><label>Motivo de visita</label><input type="text" id="ext-motivo" placeholder="Motivo..."></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-gh" onclick="closeModal('mo-ext')">Cancelar</button>
+      <button class="btn btn-gold" onclick="registrarExterno()">→ Continuar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal Encuesta Nutricional -->
+<div class="ov" id="mo-encuesta">
+  <div class="mo" style="max-width:800px">
+    <div class="mh" style="background:linear-gradient(135deg,#166534,#0D6B5E)">
+      <div class="mt-mo" style="color:#fff">📋 Encuesta Nutricional — Evaluación Inicial</div>
+      <button class="mc" style="color:#fff" onclick="closeModal('mo-encuesta')">✕</button>
+    </div>
+    <div class="mb" style="max-height:78vh">
+
+      <!-- Datos generales -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">👤 Datos generales</div>
+        <div class="g3">
+          <div class="fi" style="margin:0"><label>Nombre</label><input type="text" id="enc-nombre" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Edad</label><input type="text" id="enc-edad" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Sexo</label><input type="text" id="enc-sexo" readonly class="auto"></div>
+        </div>
+        <div class="g2" style="margin-top:10px">
+          <div class="fi" style="margin:0"><label>Fecha</label><input type="text" id="enc-fecha" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Nutrióloga</label><input type="text" id="enc-nut" readonly class="auto"></div>
+        </div>
+      </div>
+
+      <!-- Antecedentes -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🏥 Antecedentes personales patológicos</div>
+        <div class="g2">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:8px">Enfermedades / Patologías</div>
+            <div class="fi" style="margin:0 0 8px">
+              <label>¿Presenta alguna enfermedad/patología?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-enf" value="Si" onchange="toggleEncBlock('enc-enf-block',true)"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-enf" value="No" checked onchange="toggleEncBlock('enc-enf-block',false)"> No</label>
+              </div>
+            </div>
+            <div id="enc-enf-block" style="display:none">
+              <div class="fi" style="margin:0 0 6px"><label>¿Cuál/es?</label><input type="text" id="enc-enf-cual" placeholder="Diabetes, HAS..."></div>
+              <div class="fi" style="margin:0"><label>¿Desde cuándo?</label><input type="text" id="enc-enf-desde" placeholder="Años, meses..."></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--nv);margin-bottom:8px">Problemas gastrointestinales</div>
+            <div class="fi" style="margin:0 0 8px">
+              <label>¿Presenta problemas gastrointestinales?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-gi" value="Si" onchange="toggleEncBlock('enc-gi-block',true)"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-gi" value="No" checked onchange="toggleEncBlock('enc-gi-block',false)"> No</label>
+              </div>
+            </div>
+            <div id="enc-gi-block" style="display:none">
+              <div class="fi" style="margin:0 0 6px"><label>¿Cuál/es?</label><input type="text" id="enc-gi-cual" placeholder="Gastritis, colitis..."></div>
+              <div class="fi" style="margin:0"><label>¿Desde cuándo?</label><input type="text" id="enc-gi-desde" placeholder="Años, meses..."></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antropometría -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">📏 Datos antropométricos</div>
+        <div class="g4">
+          <div class="fi" style="margin:0"><label>Peso (kg)</label><input type="number" step=".1" id="enc-peso" placeholder="70.0" oninput="calcEncIMC()"></div>
+          <div class="fi" style="margin:0"><label>Estatura (cm)</label><input type="number" id="enc-talla" placeholder="165" oninput="calcEncIMC()"></div>
+          <div class="fi" style="margin:0"><label>IMC (auto)</label><input type="text" id="enc-imc" readonly class="auto"></div>
+          <div class="fi" style="margin:0"><label>Peso ideal (kg)</label><input type="text" id="enc-pesoideal" readonly class="auto"></div>
+        </div>
+      </div>
+
+      <!-- Alimentación -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🌱 Estilo de vida — Alimentación</div>
+        <div class="g2">
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas comidas realiza al día?</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-comidas" value="1-2"> 1-2</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-comidas" value="3"> 3</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-comidas" value="4-5"> 4-5</label>
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas raciones de fruta al día?</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-fruta" value="Ninguna"> Ninguna</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-fruta" value="1-2"> 1-2</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-fruta" value="3-4"> 3-4</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-fruta" value="5 o más"> 5 o más</label>
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Cuántas raciones de verdura al día?</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-verdura" value="Ninguna"> Ninguna</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-verdura" value="1-2"> 1-2</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-verdura" value="3-4"> 3-4</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-verdura" value="5 o más"> 5 o más</label>
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Con qué frecuencia consume ultraprocesados?</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-ultra" value="Ninguna"> Ninguna</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-ultra" value="1-2 v/sem"> 1-2 v/sem</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-ultra" value="3-4 v/sem"> 3-4 v/sem</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-ultra" value="Diario"> Diario</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidratación -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">💧 Hidratación</div>
+        <div class="g2">
+          <div class="fi" style="margin:0">
+            <label>¿Cuántos vasos de agua al día? (250ml)</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-agua" value="Menos de 4"> Menos de 4</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-agua" value="4-6"> 4-6</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-agua" value="7-8"> 7-8</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-agua" value="Más de 8"> Más de 8</label>
+            </div>
+          </div>
+          <div class="fi" style="margin:0">
+            <label>¿Con qué frecuencia consume refrescos/bebidas azucaradas?</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-refresco" value="Nunca"> Nunca</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-refresco" value="1-2 v/sem"> 1-2 v/sem</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-refresco" value="3-4 v/sem"> 3-4 v/sem</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-refresco" value="Diario"> Diario</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actividad física -->
+      <div class="vsec vsec-nut" style="margin-bottom:14px">
+        <div class="vsec-title nut">🏃 Actividad física</div>
+        <div class="g2">
+          <div>
+            <div class="fi" style="margin:0 0 10px">
+              <label>¿Realiza actividad física?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-af" value="Si" onchange="toggleEncBlock('enc-af-block',true)"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-af" value="No" checked onchange="toggleEncBlock('enc-af-block',false)"> No</label>
+              </div>
+            </div>
+            <div id="enc-af-block" style="display:none">
+              <div class="fi" style="margin:0 0 8px"><label>¿Qué tipo?</label><input type="text" id="enc-af-tipo" placeholder="Caminar, gym, ciclismo..."></div>
+              <div class="fi" style="margin:0">
+                <label>¿Con qué frecuencia?</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-frec" value="1-2 días/sem"> 1-2 días/sem</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-frec" value="3-4 días/sem"> 3-4 días/sem</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-frec" value="5 o más días"> 5 o más días</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="fi" style="margin:0 0 10px">
+              <label>Tiempo dedicado a AF al día</label>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-tiempo" value="Menos de 30 min"> Menos de 30 min</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-tiempo" value="30-60 min"> 30-60 min</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-af-tiempo" value="Más de 60 min"> Más de 60 min</label>
+              </div>
+            </div>
+            <div class="fi" style="margin:0">
+              <label>¿Permanece sentado la mayor parte de su jornada?</label>
+              <div style="display:flex;gap:12px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-sentado" value="Si"> Sí</label>
+                <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600"><input type="radio" name="enc-sentado" value="No"> No</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Percepción -->
+      <div class="vsec vsec-nut">
+        <div class="vsec-title nut">💭 Percepción</div>
+        <div class="fi">
+          <label>¿Qué aspecto considera más difícil de mejorar?</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-percepcion" value="Alimentación"> Alimentación</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-percepcion" value="Hidratación"> Hidratación</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-percepcion" value="Actividad física"> Actividad física</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="radio" name="enc-percepcion" value="Todos"> Todos</label>
+          </div>
+        </div>
+        <div class="fi"><label>Observaciones adicionales</label><textarea id="enc-obs" rows="2" placeholder="Notas, hábitos especiales, preferencias alimentarias..."></textarea></div>
+      </div>
+
+    </div>
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn btn-gh" onclick="imprimirEncuesta()">🖨️ Imprimir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gh" onclick="closeModal('mo-encuesta')">Cancelar</button>
+        <button class="btn" style="background:linear-gradient(135deg,#166534,#0D6B5E);color:#fff;font-weight:800" onclick="guardarEncuesta()">💾 Guardar encuesta</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Empleado Externo -->
 <div class="ov" id="mo-ext">
