@@ -1122,13 +1122,17 @@ async function generarMenuIA(){
   const calc=window._nutCalc;if(!calc){toast('Completa peso, talla, actividad y objetivo','err');return;}
   const btn=document.getElementById('btn-menu-ia');if(btn){btn.disabled=true;btn.textContent='🤖 Generando...';}
   const labels={perdida:'pérdida de peso',muscular:'aumento de masa muscular',mantenimiento:'mantenimiento',diabetes:'control de diabetes',colesterol:'control de colesterol',embarazo:'embarazo/lactancia',habitos:'hábitos generales'};
-  const prompt=`Genera menú semanal para trabajador de planta industrial en México con objetivo de ${labels[calc.obj]||calc.obj}. Calorías: ${calc.kcal} kcal/día. Macros: Proteínas ${calc.prot}g, Carbohidratos ${calc.carbs}g, Grasas ${calc.gras}g. Comida casera, accesible, variada. Responde SOLO JSON sin texto extra: {"dias":[{"dia":"Lunes","desayuno":"...","colacion_am":"...","comida":"...","colacion_pm":"...","cena":"...","kcal_total":0}]}. Genera los 7 días.`;
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
-    const data=await resp.json();const txt=(data.content||[]).map(x=>x.text||'').join('');
+    const r=await gasPost({
+      action:'generarMenu',
+      kcal:calc.kcal,prot:calc.prot,carbs:calc.carbs,gras:calc.gras,
+      obj:labels[calc.obj]||calc.obj
+    });
+    if(!r.ok){toast('Error generando menú — verifica la API key en el GAS','err');return;}
+    const txt=r.data||'';
     const menu=JSON.parse(txt.replace(/```json|```/g,'').trim());
     renderMenuIAPanel(menu.dias||[]);
-  }catch(e){toast('Error generando menú','err');}
+  }catch(e){toast('Error generando menú: '+e.message,'err');}
   if(btn){btn.disabled=false;btn.textContent='🤖 Generar menú con IA';}
 }
 function renderMenuIAPanel(dias){
