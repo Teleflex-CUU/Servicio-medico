@@ -1781,5 +1781,11 @@ function renderDash(){
       <div class="kpi" style="margin:0;border-left:3px solid var(--pu)"><div class="kv" style="color:var(--pu)">${prolongadas}</div><div class="kl">Prolongadas +28d</div></div>
     </div>`;
 }
+// ── INICIO ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  cargarUsuariosLogin();
+});
 
-
+if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
+</script>
+</body></html>
