@@ -972,9 +972,6 @@ function initApp(){
   INC=ld(SK.inc)||[];
   CITAS=ld(SK.citas)||[];
 
-  // Mostrar pantalla de carga mientras sincroniza
-  mostrarSyncInicio();
-
   // Sync automático al inicio
   syncAll(false).then(()=>{
     ocultarSyncInicio();
@@ -982,11 +979,7 @@ function initApp(){
     if(!HC.length){
       toast('⚠️ Sin Head Count — ve a la pestaña HC para cargar empleados','inf');
     }
-  }).catch(()=>{
-    ocultarSyncInicio();
-    go('captura');
-  });
-}
+ 
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
