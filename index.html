@@ -301,8 +301,6 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <span class="rol-badge" id="nav-badge"></span>
     <div class="nav-user" id="nav-user"></div>
     <button class="nav-btn" id="btn-dark" onclick="toggleDark()" title="Modo oscuro">🌙</button>
-    <button class="nav-btn" onclick="go('captura')" style="background:rgba(13,107,94,.4);border-color:rgba(13,212,182,.4)" title="Nueva consulta">📝</button>
-    <button class="nav-btn" onclick="openModal('mo-inc')" id="nav-btn-inc" style="background:rgba(220,38,38,.3);border-color:rgba(220,38,38,.4)" title="Nueva incapacidad">📋</button>
     <button class="nav-btn" onclick="doLogout()">Salir</button>
   </div>
 </nav>
@@ -992,8 +990,6 @@ function initApp(){
   // Sync automático al inicio
   syncAll();
   // Mostrar botones flotantes
-  const _navInc=document.getElementById('nav-btn-inc');
-  if(_navInc)_navInc.style.display=USER.rol==='nutricion'?'none':'';
   const _fab=document.getElementById('fab-container');
   if(_fab)_fab.style.display='flex';
   const _fabInc=document.getElementById('fab-inc');
@@ -1005,8 +1001,12 @@ function go(id){
   const sc=document.getElementById('sc-'+id);if(sc)sc.classList.add('on');
   const tb=document.getElementById('tb-'+id);if(tb)tb.classList.add('on');
   if(id==='captura'){
-    renderCaptura();
-    // Focus search input after brief delay
+    // Reset captura screen
+    const ct=document.getElementById('cap-titulo');if(ct)ct.textContent=USER&&USER.rol==='medico'?'Nueva valoración médica':'Nueva nota de enfermería';
+    const ch=document.getElementById('cap-emp-header');if(ch)ch.innerHTML=buildCapBuscador();
+    const ca=document.getElementById('cap-alertas');if(ca)ca.innerHTML='';
+    const cf=document.getElementById('cap-form-container');if(cf)cf.innerHTML='';
+    _capEmp=null;
     setTimeout(()=>{const q=document.getElementById('cap-q');if(q)q.focus();},150);
   }
   if(id==='inc') renderInc();
