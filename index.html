@@ -175,7 +175,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 /* ── CIE-10 ── */
 .cie10-drop{position:absolute;top:calc(100%+3px);left:0;right:0;background:var(--sf);border:1.5px solid var(--bor);border-radius:10px;box-shadow:var(--shl);z-index:300;max-height:240px;overflow-y:auto;display:none}
 .cie10-item{padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--sf3);font-size:12px;transition:.1s}
-.cie10-item:hover{background:var(--tl3)}.cie10-item:last-child{border-bottom:none}
+.cie10-item:hover,.cie10-item.cie10-active{background:var(--tl3)}.cie10-item:last-child{border-bottom:none}
+.cie-hint{margin-top:6px;padding:7px 10px;border-radius:8px;font-size:11px;display:none}
+.cie-hint.warn{display:block;background:#FEF3C7;border:1px solid #F59E0B;color:#92400E}
+.cie-hint.ok{display:block;background:#ECFDF5;border:1px solid #86EFAC;color:#166534}
+.cie-hint.sug{display:block;background:#EFF6FF;border:1px solid #93C5FD;color:#1D4ED8}
 
 /* ── TABS ── */
 .tabs{display:flex;gap:3px;border-bottom:2px solid var(--bor);margin-bottom:14px;overflow-x:auto}
@@ -704,9 +708,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
         <div class="fi" style="margin:0"><label>Secuencia</label>
           <select id="inc-sec"><option>Inicial</option><option>Subsecuente</option><option>Alta</option></select></div>
       </div>
-      <div class="fi"><label>CIE-10 *</label>
-        <div style="position:relative"><input type="text" id="inc-cq" placeholder="Busca por código o descripción..." oninput="buscarCIE10Input(this,'inc-cd','inc-cv','inc-dg')" autocomplete="off"><div class="cie10-drop" id="inc-cd"></div></div>
-        <input type="hidden" id="inc-cv"></div>
+      <div class="fi"><label>CIE-10 / Diagnóstico (opcional)</label>
+        <div style="position:relative"><input type="text" id="inc-cq" placeholder="Opcional: busca por código o descripción..." oninput="buscarCIE10Input(this,'inc-cd','inc-cv','inc-dg')" autocomplete="off"><div class="cie10-drop" id="inc-cd"></div></div>
+        <input type="hidden" id="inc-cv"><div id="inc-cie-hint" class="cie-hint warn">⚠️ Puedes guardar sin CIE, pero se recomienda para control y estadísticas.</div></div>
       <div class="fi"><label>Diagnóstico</label><input type="text" id="inc-dg" placeholder="Descripción diagnóstica..."></div>
       <div class="g3">
         <div class="fi" style="margin:0"><label>Fecha inicio *</label><input type="date" id="inc-ii" oninput="calcFin('inc-ii','inc-ds','inc-if')"></div>
@@ -896,6 +900,7 @@ function openModal(id){
     // Clear folio for new capture
     const folioEl=document.getElementById('inc-folio');
     if(folioEl) folioEl.value='';
+    setTimeout(enlazarModoHospitalReal,0);
   }
 }
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open');}
@@ -1138,6 +1143,7 @@ function renderPanelCaptura(emp){
   const html=USER.rol==='enfermeria'?buildFormEnf(emp):USER.rol==='medico'?buildFormMed(emp):'';
   if(panelConsulta) panelConsulta.innerHTML=html;
   if(panelHistorial) panelHistorial.innerHTML=html;
+  enlazarModoHospitalReal();
 }
 function getAlergias(noEmp){const lc=String(noEmp||'').toLowerCase();return[...new Set(CONS.filter(c=>String(c.noEmp||'').toLowerCase()===lc).flatMap(c=>(c.alergias||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean)))].join(', ');}
 function getCronicos(noEmp){const lc=String(c=>{}).toString();const lc2=String(noEmp||'').toLowerCase();return[...new Set(CONS.filter(c=>String(c.noEmp||'').toLowerCase()===lc2).flatMap(c=>(c.cronicos||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean)))].join(', ');}
@@ -1148,7 +1154,7 @@ function buildFormEnf(emp){
   <div class="g2"><div class="fi" style="margin:0"><label>Tipo de consulta *</label><select id="f-tipo"><option>Enfermedad general</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Control crónico</option><option>Urgencia</option><option>Seguimiento</option></select></div><div class="fi" style="margin:0"><label>Alergias</label><input type="text" id="f-al" value="${esc(al)}" placeholder="Penicilina, látex..."></div></div>
   <div class="sec-t" style="margin-top:12px">Signos vitales</div>
   <div class="g4"><div class="fi" style="margin:0"><label>T/A</label><input type="text" id="f-ta" placeholder="120/80"></div><div class="fi" style="margin:0"><label>FC (lpm)</label><input type="number" id="f-fc"></div><div class="fi" style="margin:0"><label>FR (rpm)</label><input type="number" id="f-fr"></div><div class="fi" style="margin:0"><label>Temp (°C)</label><input type="number" step=".1" id="f-temp"></div><div class="fi" style="margin:0"><label>Peso (kg)</label><input type="number" step=".1" id="f-peso"></div><div class="fi" style="margin:0"><label>Talla (cm)</label><input type="number" id="f-talla"></div><div class="fi" style="margin:0"><label>SpO₂ (%)</label><input type="number" id="f-spo2"></div><div class="fi" style="margin:0"><label>Glucosa</label><input type="number" id="f-gluc"></div></div>
-  <div class="fi" style="margin-top:8px"><label>CIE-10 / Diagnóstico *</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"></div>
+  <div class="fi" style="margin-top:8px"><label>CIE-10 / Diagnóstico (opcional)</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Opcional: busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"><div id="f-cie-hint" class="cie-hint warn">⚠️ Puedes guardar sin CIE, pero se recomienda para reportes clínicos y epidemiológicos.</div></div>
   <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg" placeholder="Descripción diagnóstica..."></div>
   <div class="fi"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
   <div class="fi"><label>Tratamiento / Plan</label><textarea id="f-plan" rows="2" placeholder="Medicamentos, indicaciones..."></textarea></div>
@@ -1169,7 +1175,7 @@ function buildFormMed(emp){
   <div class="fi" style="margin-top:4px"><label>IMC (auto)</label><input type="text" id="f-imc" readonly class="auto" placeholder="Se calcula automáticamente"></div>
   <div class="sec-t" style="margin-top:10px">Exploración por sistemas</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px">${apHtml}</div>
-  <div class="fi"><label>CIE-10 / Diagnóstico *</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"></div>
+  <div class="fi"><label>CIE-10 / Diagnóstico (opcional)</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Opcional: busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"></div>
   <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg" placeholder="Descripción diagnóstica..."></div>
   <div class="g2"><div class="fi" style="margin:0"><label>Alergias</label><input type="text" id="f-al" value="${esc(al)}" placeholder="Penicilina, látex..."></div><div class="fi" style="margin:0"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div></div>
   <div class="fi"><label>Plan y tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, indicaciones, dosis..."></textarea></div>
@@ -1209,8 +1215,10 @@ function toggleIncBlock(){const v=g('f-incap');const b=document.getElementById('
 // ════════════════════════════════════════════════════════════════
 async function guardarConsulta(tipo){
   const emp=_capEmp||_empActual;if(!emp){toast('Selecciona un empleado primero','err');return;}
-  let diag=g('f-dg');
-  if(!diag){toast('El diagnóstico es obligatorio — escríbelo o selecciona un CIE-10','err');return;}
+  let diag=(g('f-dg')||'').trim();
+  let cie=(g('f-cv')||'').trim();
+  if(!cie && !diag){toast('Escribe un diagnóstico o selecciona un CIE','err');return;}
+  if(!cie && diag){toast('⚠️ Consulta guardada sin CIE (recomendado para reportes)','inf');}
   const ahora=new Date();
   const folio=tipo+'-'+Date.now().toString().slice(-6);
   const APS=['Cabeza y cuello','Cardiovascular','Respiratorio','Digestivo','Genitourinario','Musculoesquelético','Neurológico','Dermatológico'];
@@ -1222,7 +1230,7 @@ async function guardarConsulta(tipo){
     mes:MESES[ahora.getMonth()],mesNum:ahora.getMonth()+1,anio:ahora.getFullYear(),semana:getWeek(ahora),
     noEmp:emp.noEmp,nombre:emp.nombre,planta:emp.planta,turno:emp.turno||USER.turno,
     depto:emp.depto,puesto:emp.puesto,nss:emp.nss,genero:emp.genero,
-    cie10:g('f-cv'),diagnostico:diag,alergias:g('f-al')||'',cronicos:g('f-cr')||'',
+    cie10:cie||'',diagnostico:diag||'',alergias:g('f-al')||'',cronicos:g('f-cr')||'',
     ta:g('f-ta'),fc:g('f-fc'),fr:g('f-fr'),temp:g('f-temp'),
     peso:g('f-peso'),talla:g('f-talla'),spo2:g('f-spo2'),glucosa:g('f-gluc'),imc:g('f-imc')||'',
     motivoConsulta:g('f-motivo')||'',plan:g('f-plan'),seguimiento:g('f-seg')||'',
@@ -1346,17 +1354,173 @@ async function guardarExpediente(){
 // CIE-10
 // ════════════════════════════════════════════════════════════════
 function buscarCIE10Input(inp,dropId,hiddenId,diagId){
-  const val=(inp.value||'').trim();const drop=document.getElementById(dropId);
-  if(!val||val.length<2){if(drop)drop.style.display='none';return;}
-  const res=buscarCIE10(val);if(!res.length){if(drop)drop.style.display='none';return;}
-  if(drop){drop.innerHTML=res.map(r=>`<div class="cie10-item" onclick="selCIE10('${r.c}','${esc(r.d)}','${r.s}','${dropId}','${hiddenId}','${diagId}','${inp.id}')"><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tl);font-size:11px">${r.c}</span><span style="margin-left:8px">${r.d}</span><span style="float:right;font-size:10px;color:var(--tx3);background:var(--sf3);padding:1px 6px;border-radius:4px">${r.s}</span></div>`).join('');drop.style.display='block';}
+  const val=(inp.value||'').trim();
+  const drop=document.getElementById(dropId);
+  const hid=document.getElementById(hiddenId);
+  const diag=document.getElementById(diagId);
+
+  if(hid) hid.value='';
+  if(inp) delete inp.dataset.selDesc;
+
+  if(!val){
+    if(drop){drop.style.display='none';drop.innerHTML='';}
+    return;
+  }
+
+  const q=val.toLowerCase();
+  const res=[...CIE10].map(r=>{
+    let score=0;
+    const code=r.c.toLowerCase(), desc=r.d.toLowerCase(), sis=r.s.toLowerCase();
+    if(code===q) score+=100;
+    if(code.startsWith(q)) score+=60;
+    if(desc.startsWith(q)) score+=40;
+    if(desc.includes(q)) score+=20;
+    if(sis.includes(q)) score+=10;
+    return {...r, score};
+  }).filter(r=>r.score>0)
+    .sort((a,b)=>b.score-a.score || a.c.localeCompare(b.c))
+    .slice(0,12);
+
+  if(!res.length){
+    if(drop){drop.style.display='none';drop.innerHTML='';}
+    return;
+  }
+
+  if(drop){
+    drop.dataset.idx='0';
+    drop.innerHTML=res.map((r,i)=>`<div class="cie10-item${i===0?' cie10-active':''}" data-idx="${i}" onclick="selCIE10('${r.c}','${esc(r.d)}','${r.s}','${dropId}','${hiddenId}','${diagId}','${inp.id}')"><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tl);font-size:11px">${r.c}</span><span style="margin-left:8px">${r.d}</span><span style="float:right;font-size:10px;color:var(--tx3);background:var(--sf3);padding:1px 6px;border-radius:4px">${r.s}</span></div>`).join('');
+    drop.style.display='block';
+  }
+
+  if(!inp.dataset.cieBound){
+    inp.addEventListener('keydown',function(ev){
+      const d=document.getElementById(dropId);
+      if(!d || d.style.display==='none') return;
+      const items=[...d.querySelectorAll('.cie10-item')];
+      if(!items.length) return;
+      let idx=Number(d.dataset.idx||0);
+
+      if(ev.key==='ArrowDown'){
+        ev.preventDefault();
+        idx=(idx+1)%items.length;
+      }else if(ev.key==='ArrowUp'){
+        ev.preventDefault();
+        idx=(idx-1+items.length)%items.length;
+      }else if(ev.key==='Enter'){
+        ev.preventDefault();
+        items[idx].click();
+        return;
+      }else if(ev.key==='Escape'){
+        d.style.display='none';
+        return;
+      }else{
+        return;
+      }
+
+      d.dataset.idx=String(idx);
+      items.forEach((it,i)=>it.classList.toggle('cie10-active',i===idx));
+      items[idx].scrollIntoView({block:'nearest'});
+    });
+    inp.dataset.cieBound='1';
+  }
+
+  if(diag && !diag.value && res[0]){
+    diag.placeholder='Ej. '+res[0].d;
+  }
 }
 function selCIE10(code,desc,sis,dropId,hiddenId,diagId,inputId){
-  const drop=document.getElementById(dropId);if(drop)drop.style.display='none';
+  const drop=document.getElementById(dropId);if(drop){drop.style.display='none';drop.innerHTML='';}
   const hid=document.getElementById(hiddenId);if(hid)hid.value=code;
-  const inp=document.getElementById(inputId);if(inp)inp.value=code+' — '+desc;
-  const diag=document.getElementById(diagId);if(diag&&!diag.value)diag.value=desc;
+  const inp=document.getElementById(inputId);
+  if(inp){
+    inp.value=code+' — '+desc;
+    inp.dataset.selDesc=desc;
+  }
+  const diag=document.getElementById(diagId);
+  if(diag && (!diag.value || diag.value===diag.placeholder.replace('Ej. ','') || diag.value===(inp?.dataset.selDesc||''))) diag.value=desc;
+  actualizarEstadoCIE(hiddenId, diagId, inputId);
 }
+
+const SUG_CIE = [
+  {k:['gripa','resfriado','rinofaringitis'], c:'J00', d:'Rinofaringitis aguda'},
+  {k:['faringitis'], c:'J02.9', d:'Faringitis aguda no especificada'},
+  {k:['amigdalitis'], c:'J03.9', d:'Amigdalitis aguda no especificada'},
+  {k:['tos'], c:'R05', d:'Tos'},
+  {k:['cefalea','dolor de cabeza'], c:'R51', d:'Cefalea'},
+  {k:['migraña','migrana'], c:'G43.9', d:'Migraña no especificada'},
+  {k:['gastroenteritis','diarrea','vomito','vómito'], c:'A09', d:'Gastroenteritis y colitis de origen infeccioso no especificado'},
+  {k:['colitis'], c:'K52.9', d:'Colitis no especificada'},
+  {k:['gastritis'], c:'K29.7', d:'Gastritis, no especificada'},
+  {k:['lumbalgia','dolor lumbar'], c:'M54.5', d:'Lumbago no especificado'},
+  {k:['dolor espalda'], c:'M54.9', d:'Dorsalgia no especificada'},
+  {k:['contractura'], c:'M62.8', d:'Espasmo muscular'},
+  {k:['esguince'], c:'T14.3', d:'Esguince de región corporal no especificada'},
+  {k:['contusion','contusión','golpe'], c:'T14.0', d:'Contusión de región corporal no especificada'},
+  {k:['infeccion urinaria','infección urinaria','itu'], c:'N39.0', d:'Infección de vías urinarias'},
+  {k:['hipertension','hipertensión'], c:'I10', d:'Hipertensión esencial'},
+  {k:['diabetes'], c:'E11.9', d:'Diabetes mellitus tipo 2 sin complicaciones'},
+  {k:['ansiedad'], c:'F41.9', d:'Trastorno de ansiedad no especificado'},
+  {k:['covid'], c:'U07.1', d:'COVID-19, virus identificado'},
+  {k:['fiebre'], c:'R50.9', d:'Fiebre no especificada'}
+];
+
+function sugerenciaCIEPorTexto(txt){
+  const q=String(txt||'').toLowerCase().trim();
+  if(!q) return null;
+  return SUG_CIE.find(x=>x.k.some(k=>q.includes(k)))||null;
+}
+
+function actualizarEstadoCIE(hiddenId,diagId,inputId){
+  const hid=document.getElementById(hiddenId);
+  const diag=document.getElementById(diagId);
+  const inp=document.getElementById(inputId);
+  const hintId = hiddenId==='inc-cv' ? 'inc-cie-hint' : 'f-cie-hint';
+  const hint=document.getElementById(hintId);
+  if(!hint) return;
+
+  const cie=String(hid?.value||'').trim();
+  const dx=String(diag?.value||'').trim();
+
+  hint.className='cie-hint';
+  if(cie){
+    hint.classList.add('ok');
+    hint.textContent='✅ CIE registrado: '+cie+'. Excelente para trazabilidad clínica y reportes.';
+    return;
+  }
+
+  const sug=sugerenciaCIEPorTexto(dx);
+  if(dx && sug){
+    hint.classList.add('sug');
+    hint.textContent='💡 Sugerencia clínica: '+sug.c+' — '+sug.d+'. Puedes seleccionarlo si corresponde.';
+    if(inp && !String(inp.value||'').trim()) inp.placeholder='Sugerencia: '+sug.c+' — '+sug.d;
+    return;
+  }
+
+  if(dx){
+    hint.classList.add('warn');
+    hint.textContent='⚠️ Se guardará con texto libre y sin CIE. Válido clínicamente, pero menos útil para estadísticas.';
+    return;
+  }
+
+  hint.classList.add('warn');
+  hint.textContent='⚠️ Puedes guardar sin CIE, pero se recomienda para reportes clínicos y epidemiológicos.';
+}
+
+function enlazarModoHospitalReal(){
+  [['f-cv','f-dg','f-cq'],['inc-cv','inc-dg','inc-cq']].forEach(([hid,diag,input])=>{
+    const d=document.getElementById(diag), i=document.getElementById(input);
+    if(d && !d.dataset.hrBound){
+      d.addEventListener('input',()=>actualizarEstadoCIE(hid,diag,input));
+      d.dataset.hrBound='1';
+    }
+    if(i && !i.dataset.hrBound){
+      i.addEventListener('input',()=>setTimeout(()=>actualizarEstadoCIE(hid,diag,input),0));
+      i.dataset.hrBound='1';
+    }
+    actualizarEstadoCIE(hid,diag,input);
+  });
+}
+
 const CIE10=[
   {c:'M54.5',d:'Lumbago no especificado',s:'Musculoesquelético'},{c:'M54.4',d:'Lumbociatalgia',s:'Musculoesquelético'},{c:'M54.2',d:'Cervicalgia',s:'Musculoesquelético'},{c:'M77.1',d:'Epicondilitis lateral',s:'Musculoesquelético'},{c:'M75.1',d:'Síndrome del manguito rotador',s:'Musculoesquelético'},{c:'M79.1',d:'Mialgia',s:'Musculoesquelético'},{c:'M25.5',d:'Dolor en articulación',s:'Musculoesquelético'},{c:'G54.2',d:'Síndrome del túnel carpiano',s:'Musculoesquelético'},{c:'M70.0',d:'Tenosinovitis De Quervain',s:'Musculoesquelético'},{c:'M62.8',d:'Espasmo muscular',s:'Musculoesquelético'},{c:'M72.2',d:'Fascitis plantar',s:'Musculoesquelético'},{c:'M17.1',d:'Gonartrosis primaria',s:'Musculoesquelético'},{c:'M47.8',d:'Espondiloartrosis',s:'Musculoesquelético'},
   {c:'S93.4',d:'Esguince del tobillo',s:'Traumatología'},{c:'S40.0',d:'Contusión del hombro',s:'Traumatología'},{c:'S60.0',d:'Contusión del dedo de la mano',s:'Traumatología'},{c:'S80.0',d:'Contusión de la rodilla',s:'Traumatología'},{c:'T14.0',d:'Herida región no especificada',s:'Traumatología'},{c:'W01',d:'Caída por resbalón o tropezón',s:'Traumatología'},{c:'X50',d:'Sobreesfuerzo y movimientos extenuantes',s:'Traumatología'},{c:'S61.0',d:'Herida del dedo de la mano',s:'Traumatología'},{c:'T30.1',d:'Quemadura de primer grado',s:'Traumatología'},{c:'T30.2',d:'Quemadura de segundo grado',s:'Traumatología'},
@@ -1471,7 +1635,11 @@ async function guardarInc(){
   const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{};
   const folioIMSS = g('inc-folio');
   const folio = folioIMSS || 'INC-'+Date.now().toString().slice(-6);
-  const inc={folio,fecha:new Date().toLocaleDateString('es-MX'),noEmp,nombre:emp.nombre||'',planta:emp.planta||'',turno:emp.turno||'',depto:emp.depto||'',nss:emp.nss||'',tipo:g('inc-tipo'),secuencia:g('inc-sec'),cie10:g('inc-cv'),diagnostico:g('inc-dg'),incInicio:ini,incFin:g('inc-if'),incDias:g('inc-ds'),estado:'Activa',registradoPor:USER.nombre};
+  const cie=(g('inc-cv')||'').trim();
+  const diag=(g('inc-dg')||'').trim();
+  if(!cie && !diag){toast('Agrega diagnóstico o CIE para la incapacidad','err');return;}
+  if(!cie && diag){toast('⚠️ Incapacidad guardada sin CIE (recomendado para control)','inf');}
+  const inc={folio,fecha:new Date().toLocaleDateString('es-MX'),noEmp,nombre:emp.nombre||'',planta:emp.planta||'',turno:emp.turno||'',depto:emp.depto||'',nss:emp.nss||'',tipo:g('inc-tipo'),secuencia:g('inc-sec'),cie10:cie||'',diagnostico:diag||'',incInicio:ini,incFin:g('inc-if'),incDias:g('inc-ds'),estado:'Activa',registradoPor:USER.nombre};
   INC.push(inc);sv(SK.inc,INC);renderInc();
   setSyncDot('busy');const r=await gasPost({action:'saveInc',val:inc});setSyncDot(r.ok?'ok':'err');
   toast(r.ok?'✅ Incapacidad guardada':'⚠️ Guardada local','ok');closeModal('mo-inc');
