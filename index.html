@@ -72,7 +72,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .rb-med{background:var(--bl);color:#fff}.rb-enf{background:var(--tl);color:#fff}.rb-nut{background:var(--gr);color:#fff}
 
 /* ── SCREENS ── */
-.sc{display:none;padding:calc(var(--nh)+52px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
+.sc{display:none;padding:calc(var(--nh)+68px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
 .sc.on{display:block}
 
 /* ── CARDS ── */
@@ -853,6 +853,17 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 
 <div id="toast"></div>
 </div><!-- /app -->
+<!-- Botones flotantes — FUERA del #app para siempre visibles -->
+<div id="fab-container" class="no-print" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9000;flex-direction:column;gap:10px;align-items:flex-end">
+  <div style="display:flex;align-items:center;gap:8px" id="fab-consulta">
+    <span id="fab-consulta-label" style="background:rgba(15,41,66,.92);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3)">📝 Nueva consulta</span>
+    <button onclick="go('captura')" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0F2942,#0D6B5E);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);transition:.2s;display:flex;align-items:center;justify-content:center" onmouseover="this.parentElement.querySelector('span').style.display='inline'" onmouseout="this.parentElement.querySelector('span').style.display='inline'">📝</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px" id="fab-inc">
+    <span style="background:rgba(185,28,28,.92);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3)">📋 Nueva incapacidad</span>
+    <button onclick="openModal('mo-inc')" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(220,38,38,.45);transition:.2s;display:flex;align-items:center;justify-content:center">📋</button>
+  </div>
+</div>
 <script>
 'use strict';
 // ════════════════════════════════════════════════════════════════
@@ -972,14 +983,13 @@ function initApp(){
   INC=ld(SK.inc)||[];
   CITAS=ld(SK.citas)||[];
 
+  // Render captura screen before sync so it's ready
+
+  // Mostrar pantalla de carga mientras sincroniza
+
   // Sync automático al inicio
-  syncAll(false).then(()=>{
-    ocultarSyncInicio();
-    go('captura'); // Activa pantalla + pestaña + renderCaptura()
-    if(!HC.length){
-      toast('⚠️ Sin Head Count — ve a la pestaña HC para cargar empleados','inf');
-    }
- 
+  syncAll();
+}
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
