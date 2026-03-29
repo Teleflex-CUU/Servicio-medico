@@ -1318,13 +1318,29 @@ function editarNota(folio){
   openModal('mo-edit');
 }
 async function guardarEdicion(){
-  const r=(_expData?.consultas||CONS).find(c=>c.folio===_editFolio);if(!r)return;
   const updates={diagnostico:g('ed-dg'),alergias:g('ed-al'),cronicos:g('ed-cr'),plan:g('ed-plan'),recomendaciones:g('ed-rec'),seguimiento:g('ed-seg'),proxCita:g('ed-prox'),incInicio:g('ed-ii'),incFin:g('ed-if'),incDias:g('ed-ds')};
-  Object.assign(r,updates,{editado:'Sí',fechaEdicion:new Date().toLocaleDateString('es-MX')});
+  const stamp={editado:'Sí',fechaEdicion:new Date().toLocaleDateString('es-MX')};
+
+  const rLocal=CONS.find(c=>c.folio===_editFolio);
+  if(rLocal) Object.assign(rLocal,updates,stamp);
+
+  const rExp=_expData?.consultas?.find(c=>c.folio===_editFolio);
+  if(rExp && rExp!==rLocal) Object.assign(rExp,updates,stamp);
+
+  if(!rLocal && !rExp){toast('Nota no encontrada para actualizar','err');return;}
+
   sv(SK.cons,CONS);
-  setSyncDot('busy');const rs=await gasPost({action:'editConsulta',folio:_editFolio,val:updates});setSyncDot(rs.ok?'ok':'err');
-  toast(rs.ok?'✅ Nota actualizada':'⚠️ Actualizado local','ok');
-  closeModal('mo-edit');renderHistorial(_histFiltro);
+
+  setSyncDot('busy');
+  const rs=await gasPost({action:'editConsulta',folio:_editFolio,val:updates});
+  setSyncDot(rs.ok?'ok':'err');
+
+  toast(rs.ok?'✅ Nota actualizada':'⚠️ Actualizada local','ok');
+  closeModal('mo-edit');
+  renderHistorial(_histFiltro);
+  if(_empActual && _expData){
+    renderExpAlertasLocal(_empActual.noEmp);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
