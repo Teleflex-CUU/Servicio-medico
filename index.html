@@ -21,7 +21,7 @@
   --sf:#FFFFFF;--sf2:#F8FAFC;--sf3:#F1F5F9;--sf4:#E2E8F0;
   --bor:#E2E8F0;--bor2:#CBD5E1;
   --tx:#0F172A;--tx2:#475569;--tx3:#94A3B8;
-  --nh:44px;--r:10px;
+  --nh:52px;--r:10px;
   --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
   --shl:0 10px 30px rgba(0,0,0,.12),0 4px 8px rgba(0,0,0,.06);
 }
@@ -72,7 +72,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .rb-med{background:var(--bl);color:#fff}.rb-enf{background:var(--tl);color:#fff}.rb-nut{background:var(--gr);color:#fff}
 
 /* ── SCREENS ── */
-.sc{display:none;padding:calc(var(--nh)+80px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
+.sc{display:none;padding:calc(var(--nh)+68px) 14px 32px;min-height:100vh;max-width:1100px;margin:0 auto}
 .sc.on{display:block}
 
 /* ── CARDS ── */
@@ -301,6 +301,8 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <span class="rol-badge" id="nav-badge"></span>
     <div class="nav-user" id="nav-user"></div>
     <button class="nav-btn" id="btn-dark" onclick="toggleDark()" title="Modo oscuro">🌙</button>
+    <button class="nav-btn" onclick="go('captura')" style="background:rgba(13,107,94,.4);border-color:rgba(13,212,182,.4)" title="Nueva consulta">📝</button>
+    <button class="nav-btn" onclick="openModal('mo-inc')" id="nav-btn-inc" style="background:rgba(220,38,38,.3);border-color:rgba(220,38,38,.4)" title="Nueva incapacidad">📋</button>
     <button class="nav-btn" onclick="doLogout()">Salir</button>
   </div>
 </nav>
@@ -989,6 +991,13 @@ function initApp(){
 
   // Sync automático al inicio
   syncAll();
+  // Mostrar botones flotantes
+  const _navInc=document.getElementById('nav-btn-inc');
+  if(_navInc)_navInc.style.display=USER.rol==='nutricion'?'none':'';
+  const _fab=document.getElementById('fab-container');
+  if(_fab)_fab.style.display='flex';
+  const _fabInc=document.getElementById('fab-inc');
+  if(_fabInc)_fabInc.style.display=USER.rol==='nutricion'?'none':'flex';
 }
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
