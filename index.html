@@ -1133,10 +1133,11 @@ function renderExpAlertasLocal(noEmp){
 // PANEL CAPTURA DINÁMICO
 // ════════════════════════════════════════════════════════════════
 function renderPanelCaptura(emp){
-  const panel=document.getElementById('panel-captura');
-  if(USER.rol==='enfermeria') panel.innerHTML=buildFormEnf(emp);
-  else if(USER.rol==='medico') panel.innerHTML=buildFormMed(emp);
-
+  const panelConsulta=document.getElementById('cap-form-container');
+  const panelHistorial=document.getElementById('panel-captura');
+  const html=USER.rol==='enfermeria'?buildFormEnf(emp):USER.rol==='medico'?buildFormMed(emp):'';
+  if(panelConsulta) panelConsulta.innerHTML=html;
+  if(panelHistorial) panelHistorial.innerHTML=html;
 }
 function getAlergias(noEmp){const lc=String(noEmp||'').toLowerCase();return[...new Set(CONS.filter(c=>String(c.noEmp||'').toLowerCase()===lc).flatMap(c=>(c.alergias||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean)))].join(', ');}
 function getCronicos(noEmp){const lc=String(c=>{}).toString();const lc2=String(noEmp||'').toLowerCase();return[...new Set(CONS.filter(c=>String(c.noEmp||'').toLowerCase()===lc2).flatMap(c=>(c.cronicos||'').split(/[,;]+/).map(x=>x.trim()).filter(Boolean)))].join(', ');}
