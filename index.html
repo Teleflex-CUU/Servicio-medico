@@ -98,12 +98,12 @@ function buildCapFormMed(emp){
   <div class="fi"><label>Enfermedades crónicas</label><input type="text" id="f-cronicos" value="${cr||''}" placeholder="DM2, HTA, asma..."></div>
   <div class="fi"><label>Alergias</label><input type="text" id="f-alergias" value="${al||''}" placeholder="Alergias conocidas..."></div>
   <div class="fi" style="position:relative">
-    <label>Búsqueda CIE-10</label>
-    <input type="text" id="f-cie-inp" placeholder="Escribe código o descripción (ej: cefalea, J00, HTA)..." oninput="buscarCIE10Input(this,'f-cie-drop','f-cie','f-dg')" autocomplete="off">
+    <label>Diagnóstico <span style="font-size:10px;font-weight:400;color:var(--tx3)">— escribe libremente, el CIE-10 se sugiere automáticamente</span></label>
+    <input type="text" id="f-dg" placeholder="Ej: cefalea, hipertensión, lumbalgia, resfriado..." oninput="buscarCIE10Input(this,'f-cie-drop','f-cie','f-dg')" autocomplete="off" style="padding-right:36px">
     <div id="f-cie-drop" class="cie-drop" style="display:none"></div>
     <input type="hidden" id="f-cie">
+    <span id="f-cie-badge" style="display:none;position:absolute;right:8px;top:32px;background:#CCFBF1;color:#0D9488;font-family:monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px"></span>
   </div>
-  <div class="fi"><label>Diagnóstico *</label><input type="text" id="f-dg" placeholder="Se autorrellena al seleccionar CIE-10 o escribe manualmente"></div>
   <div class="fi"><label>Exploración física</label><textarea id="f-exploracion" rows="2" placeholder="Hallazgos relevantes..."></textarea></div>
   <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, dosis, indicaciones..."></textarea></div>
   <div class="fi"><label>Seguimiento</label><select id="f-seg"><option>Alta</option><option>Control</option><option>Referencia especialidad</option><option>Referencia IMSS</option><option>Envío a urgencias</option></select></div>
@@ -266,8 +266,7 @@ function getNota(r){
 }
 
 function imprimirNotaMed(){
-  const r=_consultaActual||buildConsultaFromForm();
-  if(!r){toast('Guarda la consulta primero','err');return;}
+  const r=buildConsultaFromForm();
   abrirVentanaImpresion('Nota Médica',getNota({...r,tipoAtencion:'MED'}));
 }
 
@@ -278,8 +277,7 @@ function imprimirNotaMedFolio(folio){
 }
 
 function imprimirConstancia(){
-  const r=_consultaActual||buildConsultaFromForm();
-  if(!r){toast('Guarda la consulta primero','err');return;}
+  const r=buildConsultaFromForm();
   const emp=_empActual||{};
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const contenido=`${getLogoHeader()}
@@ -326,7 +324,7 @@ function imprimirConstanciaInc(folio){
 }
 
 function imprimirReceta(){
-  const r=_consultaActual||buildConsultaFromForm();
+  const r=buildConsultaFromForm();
   const emp=_empActual||{};
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const contenido=`${getLogoHeader()}
@@ -344,7 +342,7 @@ function imprimirReceta(){
 }
 
 function imprimirST7(){
-  const r=_consultaActual||buildConsultaFromForm();
+  const r=buildConsultaFromForm();
   const emp=_empActual||{};
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const contenido=`${getLogoHeader()}
@@ -1662,8 +1660,7 @@ function toggleIncBlock(){const v=g('f-incap');const b=document.getElementById('
 // ════════════════════════════════════════════════════════════════
 async function guardarConsulta(tipo){
   const emp=_capEmp||_empActual;if(!emp){toast('Selecciona un empleado primero','err');return;}
-  let diag=g('f-dg');
-  if(!diag){toast('El diagnóstico es obligatorio — escríbelo o selecciona un CIE-10','err');return;}
+  let diag=g('f-dg')||'Consulta general';
   const ahora=new Date();
   const folio=tipo+'-'+Date.now().toString().slice(-6);
   const APS=['Cabeza y cuello','Cardiovascular','Respiratorio','Digestivo','Genitourinario','Musculoesquelético','Neurológico','Dermatológico'];
@@ -1802,77 +1799,55 @@ function buscarCIE10Input(inp,dropId,hiddenId,diagId){
   const val=(inp.value||'').trim();
   const drop=document.getElementById(dropId);
   const hid=document.getElementById(hiddenId);
-  const diag=document.getElementById(diagId);
+  const badge=document.getElementById('f-cie-badge');
 
+  // Clear previous CIE selection if user is typing freely
   if(hid) hid.value='';
-  if(inp) delete inp.dataset.selDesc;
+  if(badge) badge.style.display='none';
 
-  if(!val){
+  if(!val||val.length<2){
     if(drop){drop.style.display='none';drop.innerHTML='';}
     return;
   }
 
-  const q=val.toLowerCase();
-  const res=[...CIE10].map(r=>{
-    let score=0;
-    const code=r.c.toLowerCase(), desc=r.d.toLowerCase(), sis=r.s.toLowerCase();
-    if(code===q) score+=100;
-    if(code.startsWith(q)) score+=60;
-    if(desc.startsWith(q)) score+=40;
-    if(desc.includes(q)) score+=20;
-    if(sis.includes(q)) score+=10;
-    return {...r, score};
-  }).filter(r=>r.score>0)
-    .sort((a,b)=>b.score-a.score || a.c.localeCompare(b.c))
-    .slice(0,12);
+  const q=val.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const results=CIE10.filter(e=>{
+    const c=e.c.toLowerCase();
+    const d=e.d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    return c.startsWith(q)||d.includes(q);
+  }).slice(0,8);
 
-  if(!res.length){
+  if(!results.length){
     if(drop){drop.style.display='none';drop.innerHTML='';}
     return;
   }
 
   if(drop){
-    drop.dataset.idx='0';
-    drop.innerHTML=res.map((r,i)=>`<div class="cie10-item${i===0?' cie10-active':''}" data-idx="${i}" onclick="selCIE10('${r.c}','${esc(r.d)}','${r.s}','${dropId}','${hiddenId}','${diagId}','${inp.id}')"><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tl);font-size:11px">${r.c}</span><span style="margin-left:8px">${r.d}</span><span style="float:right;font-size:10px;color:var(--tx3);background:var(--sf3);padding:1px 6px;border-radius:4px">${r.s}</span></div>`).join('');
     drop.style.display='block';
-  }
-
-  if(!inp.dataset.cieBound){
-    inp.addEventListener('keydown',function(ev){
-      const d=document.getElementById(dropId);
-      if(!d || d.style.display==='none') return;
-      const items=[...d.querySelectorAll('.cie10-item')];
-      if(!items.length) return;
-      let idx=Number(d.dataset.idx||0);
-
-      if(ev.key==='ArrowDown'){
-        ev.preventDefault();
-        idx=(idx+1)%items.length;
-      }else if(ev.key==='ArrowUp'){
-        ev.preventDefault();
-        idx=(idx-1+items.length)%items.length;
-      }else if(ev.key==='Enter'){
-        ev.preventDefault();
-        items[idx].click();
-        return;
-      }else if(ev.key==='Escape'){
-        d.style.display='none';
-        return;
-      }else{
-        return;
-      }
-
-      d.dataset.idx=String(idx);
-      items.forEach((it,i)=>it.classList.toggle('cie10-active',i===idx));
-      items[idx].scrollIntoView({block:'nearest'});
-    });
-    inp.dataset.cieBound='1';
-  }
-
-  if(diag && !diag.value && res[0]){
-    diag.placeholder='Ej. '+res[0].d;
+    drop.innerHTML=results.map(e=>`
+      <div class="cie-item" onclick="selCIE10('${e.c}','${e.d.replace(/'/g,"\\'")}','${dropId}','${hiddenId}','${diagId}')">
+        <span style="font-family:monospace;font-weight:700;color:#0D6B5E;min-width:48px;display:inline-block">${e.c}</span>
+        <span style="color:var(--tx)">${e.d}</span>
+      </div>`).join('');
   }
 }
+
+function selCIE10(code,desc,dropId,hiddenId,diagId){
+  // Set the unified diagnosis field to description
+  const diagEl=document.getElementById(diagId);
+  if(diagEl) diagEl.value=desc;
+  // Store CIE code in hidden field
+  const hid=document.getElementById(hiddenId);
+  if(hid) hid.value=code;
+  // Show badge with CIE code
+  const badge=document.getElementById('f-cie-badge');
+  if(badge){badge.textContent=code;badge.style.display='inline-block';}
+  // Close dropdown
+  const drop=document.getElementById(dropId);
+  if(drop){drop.style.display='none';}
+}
+
+
 function selCIE10(code,desc,sis,dropId,hiddenId,diagId,inputId){
   const drop=document.getElementById(dropId);if(drop){drop.style.display='none';drop.innerHTML='';}
   const hid=document.getElementById(hiddenId);if(hid)hid.value=code;
