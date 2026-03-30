@@ -888,8 +888,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 <div class="sc" id="sc-inc">
   <div class="sh2">
     <div><h2>Incapacidades</h2></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-gh btn-sm" onclick="syncInc()">🔄 Sync</button>
+      <button class="btn btn-gh btn-sm" onclick="window.print()">🖨️ Imprimir</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="descargarIncapacidades()">📥 Descargar Excel</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-weight:800;font-size:13px;padding:8px 18px" onclick="openModal('mo-inc')">📋 + Nueva incapacidad</button>
     </div>
@@ -905,11 +906,13 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div class="kpi gr"><div class="kv" id="ki-prox">0</div><div class="kl">Próx. 7 días</div></div>
     <div class="kpi" style="border-left:3px solid var(--pu)"><div class="kv" id="ki-prol" style="color:var(--pu)">0</div><div class="kl">Prolongadas +28d</div></div>
   </div>
+
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab on" id="inc-tab-lista" onclick="incTab('lista',this)">📋 Lista</button>
     <button class="tab" id="inc-tab-reporte" onclick="incTab('reporte',this)">📊 Reporte</button>
   </div>
+
   <!-- Panel Lista -->
   <div id="inc-panel-lista">
     <div class="fbar">
@@ -937,11 +940,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     </div>
     <div id="inc-lista"></div>
   </div>
+
   <!-- Panel Reporte -->
   <div id="inc-panel-reporte" style="display:none">
     <div class="fbar">
-      <select id="inc-r-anio" onchange="renderIncReporte()">
-      </select>
+      <select id="inc-r-anio" onchange="renderIncReporte()"></select>
       <select id="inc-r-per" onchange="onIncPeriodChange()">
         <option value="anio">Por año</option>
         <option value="mes">Por mes</option>
@@ -960,7 +963,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
         <option>Matutino</option><option>Vespertino</option>
       </select>
     </div>
-    <!-- Reporte KPIs -->
+
     <div class="kpis" style="margin-bottom:14px">
       <div class="kpi rd"><div class="kv" id="rki-total">0</div><div class="kl">Total incap.</div></div>
       <div class="kpi am"><div class="kv" id="rki-dias">0</div><div class="kl">Días totales</div></div>
@@ -968,16 +971,17 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       <div class="kpi"><div class="kv" id="rki-general">0</div><div class="kl">Enf. general</div></div>
       <div class="kpi" style="border-left:3px solid #F0ABFC"><div class="kv" id="rki-maternidad" style="color:#A21CAF">0</div><div class="kl">Maternidad</div></div>
     </div>
-    <!-- Gráficas -->
+
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px">
       <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px" id="inc-chart-title">Incapacidades por período</div><div class="cw"><canvas id="inc-ch-main"></canvas></div></div>
       <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por tipo</div><div class="cw"><canvas id="inc-ch-tipo"></canvas></div></div>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por planta</div><div class="cw"><canvas id="inc-ch-planta"></canvas></div></div>
       <div class="card cp"><div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Por turno</div><div class="cw"><canvas id="inc-ch-turno"></canvas></div></div>
     </div>
-    <!-- Top diagnósticos -->
+
     <div class="card cp">
       <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">Top diagnósticos</div>
       <div id="inc-top-dx"></div>
