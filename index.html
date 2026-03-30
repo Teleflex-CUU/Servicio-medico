@@ -488,7 +488,7 @@ function renderInc(){
   setK('ki-prol',prolongadas.length);
   setK('ki-tot',lista.length);
   // Render list
-  const el=document.getElementById('inc-list');
+  const el=document.getElementById('inc-lista');
   if(!el)return;
   if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">📋</div>Sin incapacidades registradas</div>';return;}
   el.innerHTML=lista.map(r=>{
