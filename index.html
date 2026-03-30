@@ -1324,45 +1324,6 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   </div>
 </div>
 
-
-<!-- Modal Empleado Externo -->
-<div class="ov" id="mo-ext">
-  <div class="mo" style="max-width:460px">
-    <div class="mh"><div class="mt-mo">👤 Empleado externo / visitante</div><button class="mc" onclick="closeModal('mo-ext')">✕</button></div>
-    <div class="mb">
-      <div class="fi"><label>Nombre completo *</label><input type="text" id="ext-nombre" placeholder="Nombre del visitante..." list="ext-nombres-list"><datalist id="ext-nombres-list"></datalist></div>
-      <div class="fi"><label>Empresa / Compañía *</label><input type="text" id="ext-empresa" placeholder="Empresa..." list="ext-empresas-list"><datalist id="ext-empresas-list"></datalist></div>
-      <div class="fi"><label>Motivo de visita</label><input type="text" id="ext-motivo" placeholder="Motivo..."></div>
-    </div>
-    <div class="mf">
-      <button class="btn btn-gh" onclick="closeModal('mo-ext')">Cancelar</button>
-      <button class="btn btn-gold" onclick="registrarExterno()">→ Continuar</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-<!-- Modal Empleado Externo -->
-<div class="ov" id="mo-ext">
-  <div class="mo" style="max-width:460px">
-    <div class="mh"><div class="mt-mo">👤 Empleado externo / visitante</div><button class="mc" onclick="closeModal('mo-ext')">✕</button></div>
-    <div class="mb">
-      <div class="fi"><label>Nombre completo *</label><input type="text" id="ext-nombre" placeholder="Nombre del visitante..." list="ext-nombres-list"><datalist id="ext-nombres-list"></datalist></div>
-      <div class="fi"><label>Empresa / Compañía *</label><input type="text" id="ext-empresa" placeholder="Empresa..." list="ext-empresas-list"><datalist id="ext-empresas-list"></datalist></div>
-      <div class="fi"><label>Motivo de visita</label><input type="text" id="ext-motivo" placeholder="Motivo..."></div>
-    </div>
-    <div class="mf">
-      <button class="btn btn-gh" onclick="closeModal('mo-ext')">Cancelar</button>
-      <button class="btn btn-gold" onclick="registrarExterno()">→ Continuar</button>
-    </div>
-  </div>
-</div>
-
-
-
-
 <div id="toast"></div>
 </div><!-- /app -->
 <script>
@@ -2683,10 +2644,7 @@ document.addEventListener('DOMContentLoaded', () => {
 if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
 
 
-</script>
-
-  <script>
-function calcularIMC(){
+function calcIMCf(){
   const peso = parseFloat(document.getElementById('f-peso')?.value);
   const talla = parseFloat(document.getElementById('f-talla')?.value);
   const imcInput = document.getElementById('f-imc');
