@@ -166,7 +166,7 @@ function calcIncFin(){
   const fin=document.getElementById('f-inc-fin');
   if(!ini||!dias||!fin||!ini.value||!dias.value) return;
   const d=new Date(ini.value+'T12:00');
-d.setDate(d.getDate()+parseInt(dias.value)-1);
+d.setDate(d.getDate()+parseInt(dias.value));
   fin.value=d.toISOString().split('T')[0];
 }
 
@@ -1707,10 +1707,7 @@ function calcEdadHC(emp){
   const fn=String(emp.fechaNacimiento||'');if(!fn)return 35;
   let a=0;if(fn.includes('/'))a=parseInt(fn.split('/').pop());else a=parseInt(fn.split('-')[0]);
   const e=new Date().getFullYear()-a;return(e>10&&e<80)?e:35;
-}
-function calcIMCf(){
-  const p=parseFloat(g('f-peso'))||0,t=parseFloat(g('f-talla'))||0;
-  if(p&&t){const imc=(p/(t/100)**2).toFixed(1);sv2('f-imc',imc);}
+
 }
 function calcFin(iniId,diasId,finId){
   const ini=g(iniId),dias=parseInt(g(diasId))||0;if(!ini||!dias)return;
@@ -2685,7 +2682,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
 
-  function calcularIMC(){
+
+</script>
+
+  <script>
+function calcularIMC(){
   const peso = parseFloat(document.getElementById('f-peso')?.value);
   const talla = parseFloat(document.getElementById('f-talla')?.value);
   const imcInput = document.getElementById('f-imc');
@@ -2703,31 +2704,12 @@ if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add
     imcInput.value = imc.toFixed(2);
   }
 
-  // 🔥 mover aguja (0 a 40 IMC)
+  // mover aguja
   if(needle){
     let porcentaje = (imc / 40) * 100;
     if(porcentaje > 100) porcentaje = 100;
     needle.style.left = porcentaje + '%';
   }
 }
-  <script>
-function calcularIMC(){
-  const peso = parseFloat(document.getElementById('f-peso')?.value);
-  const talla = parseFloat(document.getElementById('f-talla')?.value);
-  const imcInput = document.getElementById('f-imc');
-
-  if(!peso || !talla || talla === 0){
-    if(imcInput) imcInput.value = '';
-    return;
-  }
-
-  const imc = peso / (talla * talla);
-
-  if(imcInput){
-    imcInput.value = imc.toFixed(2);
-  }
-}
-</script>
-  
 </script>
 </body></html>
