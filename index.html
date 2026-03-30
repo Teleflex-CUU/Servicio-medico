@@ -27,7 +27,6 @@ function renderCaptura(){
 function buildCapFormEnf(emp){
   const al=getAlergias(emp.noEmp);
   return`<div class="card" style="margin-top:10px">
-  ${al?`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:#854D0E">⚠️ Alergias: ${al}</div>`:''}
   <div class="g2">
     <div class="fi"><label>Fecha</label><input type="date" id="f-fecha" value="${new Date().toISOString().split('T')[0]}"></div>
     <div class="fi"><label>Hora</label><input type="time" id="f-hora" value="${new Date().toTimeString().slice(0,5)}"></div>
@@ -89,7 +88,6 @@ function buildCapFormMed(emp){
   const cr=getCronicos(emp.noEmp);
   const al=getAlergias(emp.noEmp);
   return`<div class="card" style="margin-top:10px">
-  ${al?`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:#854D0E">⚠️ Alergias: ${al}</div>`:''}
   <div class="g2">
     <div class="fi"><label>Fecha</label><input type="date" id="f-fecha" value="${new Date().toISOString().split('T')[0]}"></div>
     <div class="fi"><label>Hora</label><input type="time" id="f-hora" value="${new Date().toTimeString().slice(0,5)}"></div>
