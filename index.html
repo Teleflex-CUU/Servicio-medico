@@ -27,9 +27,6 @@ function renderCaptura(){
 function buildCapFormEnf(emp){
   const al=getAlergias(emp.noEmp);
   const cr=getCronicos(emp.noEmp);
-  ${cr ? `<div style="background:#E0F2FE;border:1.5px solid #38BDF8;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:#075985">
-🩺 Enfermedades crónicas: ${cr}
-</div>` : ''}
   return`<div class="card" style="margin-top:10px">
   <div class="g2">
     <div class="fi"><label>Fecha</label><input type="date" id="f-fecha" value="${new Date().toISOString().split('T')[0]}"></div>
@@ -91,10 +88,8 @@ function buildCapFormEnf(emp){
 function buildCapFormMed(emp){
   const al=getAlergias(emp.noEmp);
   const cr=getCronicos(emp.noEmp);
-  ${cr ? `<div style="background:#E0F2FE;border:1.5px solid #38BDF8;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:#075985">
-🩺 Enfermedades crónicas: ${cr}
-</div>` : ''}
   return`<div class="card" style="margin-top:10px">
+  ${cr?`<div style="background:#E0F2FE;border:1.5px solid #38BDF8;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:#075985">🩺 Crónicas: ${cr}</div>`:''}
   <div class="g2">
     <div class="fi"><label>Fecha</label><input type="date" id="f-fecha" value="${new Date().toISOString().split('T')[0]}"></div>
     <div class="fi"><label>Hora</label><input type="time" id="f-hora" value="${new Date().toTimeString().slice(0,5)}"></div>
@@ -889,6 +884,86 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <div id="cap-form-container"></div>
 </div>
 
+<!-- ═══ PASTILLEO ═══ -->
+<div class="sc" id="sc-pastilleo">
+  <div class="sh2">
+    <div>
+      <h2>💊 Pastilleo</h2>
+      <p style="font-size:12px;color:var(--tx3)">Entrega de medicamento rápida — se registra en la hoja de Consultas de Enfermería</p>
+    </div>
+    <button class="btn btn-gh btn-sm" onclick="go('inicio')">← Historial</button>
+  </div>
+
+  <!-- Buscador de empleado -->
+  <div id="past-emp-header">
+    <div class="card cp">
+      <div class="sec-t" style="margin-bottom:10px">🔍 Buscar trabajador</div>
+      <div class="sw">
+        <span class="si">🔍</span>
+        <input type="text" id="past-q" placeholder="No. empleado o nombre..." oninput="buscarPastilleo(this.value)" autocomplete="off" style="font-size:14px;font-weight:600">
+        <div class="sd" id="past-drop"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas (alergias / frecuencia) -->
+  <div id="past-alertas" style="margin-bottom:10px"></div>
+
+  <!-- Formulario rápido (oculto hasta seleccionar empleado) -->
+  <div id="past-form" style="display:none">
+    <div class="card">
+      <!-- Datos del empleado -->
+      <div id="past-emp-card" style="background:var(--sf3);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div id="past-emp-nombre" style="font-weight:800;font-size:14px"></div>
+          <div id="past-emp-meta" style="font-size:11px;color:var(--tx3);margin-top:2px"></div>
+        </div>
+        <button class="btn btn-gh btn-sm" onclick="limpiarPastilleo()">✕ Cambiar</button>
+      </div>
+
+      <!-- Campos del pastilleo -->
+      <div class="g2" style="margin-bottom:10px">
+        <div class="fi">
+          <label>Fecha</label>
+          <input type="date" id="past-fecha" value="">
+        </div>
+        <div class="fi">
+          <label>Turno</label>
+          <select id="past-turno">
+            <option>Matutino</option>
+            <option>Vespertino</option>
+            <option>Tiempo extra</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fi">
+        <label>Motivo / Síntoma</label>
+        <input type="text" id="past-motivo" placeholder="Ej: cefalea, dolor muscular, cólico..." style="font-size:13px">
+      </div>
+
+      <div class="fi">
+        <label>Medicamento entregado</label>
+        <input type="text" id="past-tx" placeholder="Ej: Ibuprofeno 400mg, Paracetamol, Berocca..." style="font-size:13px">
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" style="background:linear-gradient(135deg,#0F2942,#0D6B5E)" onclick="guardarPastilleo()">💾 Registrar pastilleo</button>
+        <button class="btn btn-gh" onclick="limpiarPastilleo()">🔄 Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial del día -->
+  <div class="card cp" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-t" style="margin:0">📋 Pastilleos del día</div>
+      <span id="past-count" style="background:var(--tl);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px">0</span>
+    </div>
+    <div id="past-list"><div class="empty"><div class="empty-i">💊</div>Sin registros hoy</div></div>
+  </div>
+</div>
+
 <!-- ═══ INCAPACIDADES ═══ -->
 <div class="sc" id="sc-inc">
   <div class="sh2">
@@ -1435,6 +1510,7 @@ function initApp(){
     {id:'citas',icon:'📅',label:'Citas',roles:['medico','enfermeria']},
     {id:'dash',icon:'📊',label:'Dashboard',roles:['medico']},
     {id:'usr',icon:'👥',label:'Usuarios',roles:['medico']},
+    {id:'pastilleo',icon:'💊',label:'Pastilleo',roles:['enfermeria']},
     {id:'hc',icon:'📂',label:'Head Count',roles:['medico','enfermeria']},
   ];
   document.getElementById('nav-tabs').innerHTML=allTabs.filter(t=>t.roles.includes(USER.rol)).map(t=>
@@ -1479,6 +1555,7 @@ function go(id){
   if(id==='inc') renderInc();
   if(id==='citas') renderCitas();
   if(id==='dash') renderDash();
+  if(id==='pastilleo'){limpiarPastilleo();renderPastilleoHoy();}
   if(id==='usr') renderUsuarios();
   if(id==='hc'){
     if(HC.length){
@@ -2645,6 +2722,163 @@ function abrirVentanaImpresion(titulo,contenido){
   abrirImpresion(titulo,contenido);
 }
 
+
+
+// ════════════════════════════════════════════════════════════════
+// PASTILLEO
+// ════════════════════════════════════════════════════════════════
+
+let _pastEmp = null;
+
+function buscarPastilleo(val){
+  const drop = document.getElementById('past-drop');
+  if(!drop) return;
+  val = (val||'').trim();
+  if(!val||val.length<2){drop.classList.remove('show');return;}
+  if(!HC.length){drop.innerHTML='<div class="si-item" style="color:var(--am)">⚠️ Sin HC — sincroniza primero</div>';drop.classList.add('show');return;}
+  const q = norm(val);
+  const matches = HC.filter(e=>norm(e.noEmp||'').includes(q)||norm(e.nombre||'').includes(q)).slice(0,8);
+  if(!matches.length){drop.classList.remove('show');return;}
+  drop.innerHTML = matches.map(e=>`
+    <div class="si-item" onclick="selPastEmp('${esc(String(e.noEmp))}')">
+      <div class="si-name">${e.nombre}</div>
+      <div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}</div>
+    </div>`).join('');
+  drop.classList.add('show');
+}
+
+function selPastEmp(noEmp){
+  const emp = HC.find(e=>String(e.noEmp)===String(noEmp));
+  if(!emp){toast('Empleado no encontrado','err');return;}
+  _pastEmp = emp;
+
+  // Hide search, show form
+  const drop = document.getElementById('past-drop');
+  if(drop) drop.classList.remove('show');
+  const qEl = document.getElementById('past-q');
+  if(qEl) qEl.value = emp.nombre+' (No.'+emp.noEmp+')';
+
+  // Fill card
+  document.getElementById('past-emp-nombre').textContent = emp.nombre;
+  document.getElementById('past-emp-meta').textContent = `No.${emp.noEmp} · ${emp.planta||'—'} · ${emp.depto||'—'} · ${emp.puesto||'—'}`;
+
+  // Set default date/turno
+  const fechaEl = document.getElementById('past-fecha');
+  if(fechaEl) fechaEl.value = new Date().toISOString().split('T')[0];
+
+  // Show alerts
+  const ca = document.getElementById('past-alertas');
+  if(ca){
+    const al = getAlergias(emp.noEmp);
+    const cr = getCronicos(emp.noEmp);
+    const frec = calcFrecuencia(emp.noEmp);
+    let h = '';
+    if(al) h+=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-weight:700;color:#854D0E;font-size:12px">⚠️ Alergias: ${al}</div>`;
+    if(cr) h+=`<div style="background:#E0F2FE;border:1.5px solid #38BDF8;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-weight:700;color:#075985;font-size:12px">🩺 Crónicas: ${cr}</div>`;
+    if(frec>=8) h+=`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#B91C1C">🔴 Alta frecuencia:</strong> ${frec} consultas en 30 días.</div>`;
+    else if(frec>=4) h+=`<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#92400E">🟡 Frecuencia moderada:</strong> ${frec} consultas en 30 días.</div>`;
+    ca.innerHTML = h;
+  }
+
+  // Show form
+  const form = document.getElementById('past-form');
+  if(form) form.style.display = 'block';
+
+  // Focus motivo
+  setTimeout(()=>{const m=document.getElementById('past-motivo');if(m)m.focus();},150);
+}
+
+function limpiarPastilleo(){
+  _pastEmp = null;
+  const qEl = document.getElementById('past-q'); if(qEl) qEl.value='';
+  const form = document.getElementById('past-form'); if(form) form.style.display='none';
+  const ca = document.getElementById('past-alertas'); if(ca) ca.innerHTML='';
+  const mot = document.getElementById('past-motivo'); if(mot) mot.value='';
+  const tx = document.getElementById('past-tx'); if(tx) tx.value='';
+  setTimeout(()=>{const q=document.getElementById('past-q');if(q)q.focus();},100);
+}
+
+async function guardarPastilleo(){
+  if(!_pastEmp){toast('Selecciona un trabajador primero','err');return;}
+  const motivo = (document.getElementById('past-motivo')?.value||'').trim();
+  const tx = (document.getElementById('past-tx')?.value||'').trim();
+  if(!motivo){toast('Escribe el motivo / síntoma','err');document.getElementById('past-motivo')?.focus();return;}
+  if(!tx){toast('Escribe el medicamento entregado','err');document.getElementById('past-tx')?.focus();return;}
+
+  const ahora = new Date();
+  const fechaInput = document.getElementById('past-fecha')?.value;
+  const turno = document.getElementById('past-turno')?.value||USER.turno||'Matutino';
+  const folio = 'ENF-'+Date.now().toString().slice(-6);
+
+  const cons = {
+    folio,
+    tipoAtencion:'ENF',
+    tipoCons:'Pastilleo',
+    fecha: ahora.toLocaleDateString('es-MX'),
+    hora: ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    mes: MESES[ahora.getMonth()],
+    mesNum: ahora.getMonth()+1,
+    anio: ahora.getFullYear(),
+    semana: getWeek(ahora),
+    noEmp: _pastEmp.noEmp,
+    nombre: _pastEmp.nombre,
+    planta: _pastEmp.planta,
+    turno,
+    depto: _pastEmp.depto,
+    puesto: _pastEmp.puesto,
+    nss: _pastEmp.nss,
+    genero: _pastEmp.genero,
+    diagnostico: motivo,
+    plan: tx,
+    motivoConsulta: motivo,
+    seguimiento: 'Alta',
+    incapacidad: 'No',
+    registradoPor: USER.nombre
+  };
+
+  // Save locally
+  CONS.push(cons);
+  sv(SK.cons, CONS);
+
+  // Save to GAS
+  toast('Guardando...','ok');
+  const r = await gasPost({action:'saveConsulta',...cons});
+  if(r.ok){
+    toast('✅ Pastilleo registrado — '+_pastEmp.nombre,'ok');
+  } else {
+    toast('Guardado local — sin conexión','ok');
+  }
+
+  // Update today list
+  renderPastilleoHoy();
+
+  // Clear for next patient
+  limpiarPastilleo();
+}
+
+function renderPastilleoHoy(){
+  const hoy = new Date().toLocaleDateString('es-MX');
+  const lista = CONS.filter(c=>c.tipoCons==='Pastilleo'&&c.fecha===hoy&&c.registradoPor===USER.nombre)
+    .sort((a,b)=>b.folio.localeCompare(a.folio));
+  const el = document.getElementById('past-list');
+  const cnt = document.getElementById('past-count');
+  if(cnt) cnt.textContent = lista.length;
+  if(!el) return;
+  if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">💊</div>Sin pastilleos hoy</div>';return;}
+  el.innerHTML = lista.map(c=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--bor);font-size:12px">
+      <div>
+        <strong>${c.nombre}</strong>
+        <span style="color:var(--tx3);margin-left:6px">No.${c.noEmp}</span>
+        <div style="color:var(--tx3);font-size:11px;margin-top:2px">
+          ${c.diagnostico||'—'} → <span style="color:var(--tl);font-weight:600">${c.plan||'—'}</span>
+          <span style="margin-left:6px">${c.hora||''}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Render list when tab opens
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
