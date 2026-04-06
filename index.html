@@ -1022,7 +1022,16 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
           </select>
         </div>
       </div>
-
+<div class="g2" style="margin-bottom:10px">
+  <div class="fi">
+    <label>Alergias</label>
+    <input type="text" id="past-alergias" readonly placeholder="Sin alergias registradas" style="font-size:13px;background:var(--sf3);font-weight:600">
+  </div>
+  <div class="fi">
+    <label>Enfermedades crónicas</label>
+    <input type="text" id="past-cronicos" readonly placeholder="Sin antecedentes registrados" style="font-size:13px;background:var(--sf3);font-weight:600">
+  </div>
+</div>
       <div class="fi">
         <label>Motivo / Síntoma</label>
         <input type="text" id="past-motivo" placeholder="Ej: cefalea, dolor muscular, cólico..." style="font-size:13px">
@@ -3110,6 +3119,15 @@ function calcIMCf(){
     if(porcentaje > 100) porcentaje = 100;
     needle.style.left = porcentaje + '%';
   }
+  function cargarDatosClinicosPastilleo(emp){
+  const al = document.getElementById('past-alergias');
+  const cr = document.getElementById('past-cronicos');
+
+  if(!al || !cr) return;
+
+  al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
+  cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
 }
+}  
 </script>
 </body></html>
