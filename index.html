@@ -2959,6 +2959,7 @@ function selPastEmp(noEmp){
   const emp = HC.find(e=>String(e.noEmp)===String(noEmp));
   if(!emp){toast('Empleado no encontrado','err');return;}
   _pastEmp = emp;
+  cargarDatosClinicosPastilleo(emp);
 
   // Hide search, show form
   const drop = document.getElementById('past-drop');
