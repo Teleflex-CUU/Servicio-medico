@@ -1565,6 +1565,41 @@ if (cached.length) {
 function showErr(m){const e=document.getElementById('lerr');e.textContent=m;e.style.display='block';}
 function doLogout(){USER=null;location.reload();}
 
+  function doLogin(){
+  const sel = document.getElementById('login-sel');
+  if(!sel){
+    showErr('No se encontró la lista de usuarios');
+    return;
+  }
+
+  const userValue = sel.value;
+  if(!userValue){
+    showErr('Selecciona tu nombre');
+    return;
+  }
+
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt){
+    showErr('No se pudo leer el usuario seleccionado');
+    return;
+  }
+
+  USER = {
+    user: userValue,
+    nombre: opt.dataset.nombre || opt.textContent || '',
+    rol: opt.dataset.rol || 'enfermeria',
+    planta: opt.dataset.planta || '',
+    turno: opt.dataset.turno || ''
+  };
+
+  const loginScreen = document.getElementById('login-screen');
+  const app = document.getElementById('app');
+
+  if(loginScreen) loginScreen.style.display = 'none';
+  if(app) app.style.display = 'block';
+
+  initApp();
+}
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
