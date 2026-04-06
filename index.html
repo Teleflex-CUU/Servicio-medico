@@ -2954,12 +2954,33 @@ function buscarPastilleo(val){
     </div>`).join('');
   drop.classList.add('show');
 }
+  
+function cargarDatosClinicosPastilleo(emp){
+  const al = document.getElementById('past-alergias');
+  const cr = document.getElementById('past-cronicos');
+  const alertas = document.getElementById('past-alertas');
 
+  if(alertas) alertas.innerHTML = '';
+  if(!al || !cr || !emp) return;
+
+  al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
+  cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
+
+  renderAlertaFrecuenciaPastilleo(emp);
+}
+  
 function selPastEmp(noEmp){
   const emp = HC.find(e=>String(e.noEmp)===String(noEmp));
   if(!emp){toast('Empleado no encontrado','err');return;}
   _pastEmp = emp;
+
   cargarDatosClinicosPastilleo(emp);
+
+  document.getElementById('past-form').style.display = 'block';
+  document.getElementById('past-emp-nombre').textContent = emp.nombre || '';
+  document.getElementById('past-emp-meta').textContent =
+    `No. ${emp.noEmp || '—'} · ${emp.planta || '—'} · ${emp.depto || '—'}`;
+}
 
   // Hide search, show form
   const drop = document.getElementById('past-drop');
