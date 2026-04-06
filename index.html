@@ -774,6 +774,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 /* Incap block */
 .inc-block-visual{background:linear-gradient(135deg,rgba(220,38,38,.05),rgba(220,38,38,.02));border:1.5px solid rgba(220,38,38,.3);border-radius:10px;padding:14px;margin-bottom:12px}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -789,13 +790,24 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <h1>Salud Ocupacional</h1>
     <p>Sistema Unificado · Teleflex Chihuahua</p>
     <div id="lerr"></div>
-    <div class="fi">
-      <label>Selecciona tu usuario</label>
-      <select id="login-sel">
-        <option value="">— Cargando usuarios... —</option>
-      </select>
+
+    <!-- Pantalla de carga usuarios -->
+    <div id="login-loading" style="text-align:center;padding:20px 0">
+      <div style="display:inline-block;width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px"></div>
+      <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600" id="login-loading-msg">Conectando con el servidor...</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px" id="login-loading-sub">Cargando lista de usuarios</div>
     </div>
-    <button class="lbtn" onclick="doLogin()">Entrar →</button>
+
+    <!-- Select (oculto hasta que cargue) -->
+    <div id="login-form" style="display:none">
+      <div class="fi">
+        <label style="color:rgba(255,255,255,.8);font-size:12px;font-weight:600">Selecciona tu usuario</label>
+        <select id="login-sel" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-family:inherit;outline:none;backdrop-filter:blur(8px)">
+          <option value="">— Selecciona tu nombre —</option>
+        </select>
+      </div>
+      <button class="lbtn" onclick="doLogin()" style="margin-top:8px">Entrar →</button>
+    </div>
   </div>
 </div>
 
@@ -1466,6 +1478,36 @@ async function gasPost(body){try{const ctrl=new AbortController();setTimeout(()=
 // ════════════════════════════════════════════════════════════════
 async function cargarUsuariosLogin(){
   const sel=document.getElementById('login-sel');
+  const loading=document.getElementById('login-loading');
+  const form=document.getElementById('login-form');
+  const msg=document.getElementById('login-loading-msg');
+  const sub=document.getElementById('login-loading-sub');
+
+  // Show loading, hide form
+  if(loading) loading.style.display='block';
+  if(form) form.style.display='none';
+
+  // Animated messages
+  const msgs=[
+    ['Conectando con el servidor...','Cargando lista de usuarios'],
+    ['Verificando configuración...','Un momento por favor'],
+    ['Casi listo...','Preparando el sistema'],
+  ];
+  let mi=0;
+  const msgInterval=setInterval(()=>{
+    mi=(mi+1)%msgs.length;
+    if(msg) msg.textContent=msgs[mi][0];
+    if(sub) sub.textContent=msgs[mi][1];
+  },1400);
+
+  // Try local first (instant)
+  const cached=ld(SK.usr)||[];
+  if(cached.length){
+    clearInterval(msgInterval);
+    if(msg) msg.textContent='Usuarios cargados ✓';
+    if(sub) sub.textContent='Conectando para actualizar...';
+  }
+
   // Intentar desde GAS
   const r=await gasGet({action:'getUsuarios'});
   let users=[];
@@ -1474,7 +1516,18 @@ async function cargarUsuariosLogin(){
   } else {
     users=ld(SK.usr)||[];
   }
-  if(!users.length){sel.innerHTML='<option value="">⚠️ Sin conexión — configura el GAS</option>';return;}
+  clearInterval(msgInterval);
+  if(!users.length){
+    if(loading) loading.style.display='none';
+    if(form) form.style.display='block';
+    sel.innerHTML='<option value="">⚠️ Sin conexión — configura el GAS</option>';
+    return;
+  }
+  // Smooth transition
+  if(msg) msg.textContent='¡Listo! '+users.length+' usuarios cargados';
+  await new Promise(r=>setTimeout(r,500));
+  if(loading) loading.style.display='none';
+  if(form){form.style.display='block';form.style.opacity='0';form.style.transition='opacity .4s';setTimeout(()=>{form.style.opacity='1';},10);}
   sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+
     users.map(u=>`<option value="${u.user}" data-rol="${u.rol}" data-nombre="${esc(u.nombre)}" data-planta="${u.planta||''}" data-turno="${u.turno||''}">${u.nombre}${u.planta&&u.planta!=='Todas'?' · '+u.planta:''}</option>`).join('');
 }
