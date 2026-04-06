@@ -1483,11 +1483,30 @@ async function cargarUsuariosLogin(){
   const msg=document.getElementById('login-loading-msg');
   const sub=document.getElementById('login-loading-sub');
 
-  // Show loading, hide form
+  const mostrarForm=(users,fromCache)=>{
+    clearInterval(msgInterval);
+    if(loading) loading.style.display='none';
+    if(!users.length){
+      if(form) form.style.display='block';
+      sel.innerHTML='<option value="">⚠️ Sin conexión — configura el GAS</option>';
+      return;
+    }
+    sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+
+      users.filter(u=>u.activo!=='No').map(u=>`<option value="${u.user}" data-rol="${u.rol}" data-nombre="${esc(u.nombre)}" data-planta="${u.planta||''}" data-turno="${u.turno||''}">${u.nombre}</option>`).join('');
+    if(form){
+      form.style.opacity='0';
+      form.style.display='block';
+      form.style.transition='opacity .4s';
+      setTimeout(()=>{form.style.opacity='1';},30);
+    }
+    if(msg) msg.textContent=(fromCache?'✓ Cargado desde caché':'✓ '+users.length+' usuarios listos');
+  };
+
+  // Show loading spinner
   if(loading) loading.style.display='block';
   if(form) form.style.display='none';
 
-  // Animated messages
+  // Rotating messages
   const msgs=[
     ['Conectando con el servidor...','Cargando lista de usuarios'],
     ['Verificando configuración...','Un momento por favor'],
@@ -1498,48 +1517,41 @@ async function cargarUsuariosLogin(){
     mi=(mi+1)%msgs.length;
     if(msg) msg.textContent=msgs[mi][0];
     if(sub) sub.textContent=msgs[mi][1];
-  },1400);
+  },1200);
 
-  // Try local first (instant)
+  // ── If cached users exist, show them immediately ──────────────
   const cached=ld(SK.usr)||[];
   if(cached.length){
-    clearInterval(msgInterval);
-    if(msg) msg.textContent='Usuarios cargados ✓';
-    if(sub) sub.textContent='Conectando para actualizar...';
-  }
-
-  // Intentar desde GAS
-  const r=await gasGet({action:'getUsuarios'});
-  let users=[];
-  if(r.ok&&Array.isArray(r.data)&&r.data.length){
-    users=r.data;sv(SK.usr,users);
-  } else {
-    users=ld(SK.usr)||[];
-  }
-  clearInterval(msgInterval);
-  if(!users.length){
+    mostrarForm(cached, true);
+    if(sub) sub.textContent='Actualizando en segundo plano...';
     if(loading) loading.style.display='none';
-    if(form) form.style.display='block';
-    sel.innerHTML='<option value="">⚠️ Sin conexión — configura el GAS</option>';
+    // Still fetch in background to update
+    gasGet({action:'getUsuarios'}).then(r=>{
+      if(r.ok&&Array.isArray(r.data)&&r.data.length){
+        sv(SK.usr,r.data);
+        // Silently update select
+        sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+
+          r.data.filter(u=>u.activo!=='No').map(u=>`<option value="${u.user}" data-rol="${u.rol}" data-nombre="${esc(u.nombre)}" data-planta="${u.planta||''}" data-turno="${u.turno||''}">${u.nombre}</option>`).join('');
+      }
+    }).catch(()=>{});
     return;
   }
-  // Smooth transition
-  if(msg) msg.textContent='¡Listo! '+users.length+' usuarios cargados';
-  await new Promise(r=>setTimeout(r,500));
-  if(loading) loading.style.display='none';
-  if(form){form.style.display='block';form.style.opacity='0';form.style.transition='opacity .4s';setTimeout(()=>{form.style.opacity='1';},10);}
-  sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+
-    users.map(u=>`<option value="${u.user}" data-rol="${u.rol}" data-nombre="${esc(u.nombre)}" data-planta="${u.planta||''}" data-turno="${u.turno||''}">${u.nombre}${u.planta&&u.planta!=='Todas'?' · '+u.planta:''}</option>`).join('');
+
+  // ── No cache — wait for GAS (timeout 8s) ─────────────────────
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
+    const r=await gasGet({action:'getUsuarios'});
+    clearTimeout(timeout);
+    let users=[];
+    if(r.ok&&Array.isArray(r.data)&&r.data.length){users=r.data;sv(SK.usr,users);}
+    mostrarForm(users,false);
+  }catch(e){
+    // Timeout or error
+    mostrarForm([],false);
+  }
 }
-function doLogin(){
-  const sel=document.getElementById('login-sel');
-  const opt=sel.options[sel.selectedIndex];
-  if(!sel.value){showErr('Selecciona tu nombre');return;}
-  USER={user:sel.value,nombre:opt.dataset.nombre,rol:opt.dataset.rol,planta:opt.dataset.planta||'Todas',turno:opt.dataset.turno||'Todos'};
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  initApp();
-}
+
 function showErr(m){const e=document.getElementById('lerr');e.textContent=m;e.style.display='block';}
 function doLogout(){USER=null;location.reload();}
 
