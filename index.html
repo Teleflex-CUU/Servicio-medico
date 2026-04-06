@@ -1623,9 +1623,21 @@ function initApp(){
     {id:'pastilleo',icon:'💊',label:'Pastilleo',roles:['enfermeria']},
     {id:'hc',icon:'📂',label:'Head Count',roles:['medico','enfermeria']},
   ];
-  document.getElementById('nav-tabs').innerHTML=allTabs.filter(t=>t.roles.includes(USER.rol)).map(t=>
-    t.id==='captura'?`<button class="tb${t.id==='captura'?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')" style="background:rgba(13,107,94,.35);border:1px solid rgba(13,212,182,.3);color:#fff">${t.icon} ${t.label}</button>`:`<button class="tb${t.id==='captura'?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')">${t.icon} ${t.label}</button>`).join('');
+  const defaultTab = USER.rol === 'enfermeria' ? 'pastilleo' : 'captura';
 
+document.getElementById('nav-tabs').innerHTML = allTabs
+  .filter(t => t.roles.includes(USER.rol))
+  .map(t =>
+    t.id === 'captura'
+      ? `<button class="tb${t.id===defaultTab?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')" style="background:rgba(13,107,94,.35);border:1px solid rgba(13,212,182,.3);color:#fff">${t.icon} ${t.label}</button>`
+      : `<button class="tb${t.id===defaultTab?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')">${t.icon} ${t.label}</button>`
+  )
+  if (USER.rol === 'enfermeria') {
+  go('pastilleo');
+} else {
+  go('captura');
+}
+  .join('');
   // Dark mode
   if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
   const btn=document.getElementById('btn-dark');if(btn)btn.textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';
