@@ -801,35 +801,54 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 .lc-logos img:last-child{
   height:55px;
 }
+ <style>
+  ...todo tu CSS anterior...
 
-/* ─── LOGOS NAV PRO ─── */
-.nav-brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-right:8px;
-  flex-shrink:0;
-}
+  /* 👇 LO QUE PEGASTE */
+  .lc-logos{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:20px;
+    margin-bottom:20px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--bor);
+  }
 
-.nav-brand img{
-  display:block;
-  object-fit:contain;
-  opacity:.95;
-}
+  .lc-logos img{
+    width:auto;
+    object-fit:contain;
+  }
 
-.nav-brand img:first-child{
-  height:30px;
-}
+  .lc-logos img:first-child{
+    height:70px;
+  }
 
-.nav-brand img:last-child{
-  height:26px;
-}
+  .lc-logos img:last-child{
+    height:55px;
+  }
 
-.nav-divider{
-  width:1px;
-  height:24px;
-  background:rgba(255,255,255,.3);
-}    
+  .nav-brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-right:8px;
+  }
+
+  .nav-brand img:first-child{
+    height:30px;
+  }
+
+  .nav-brand img:last-child{
+    height:26px;
+  }
+
+  .nav-divider{
+    width:1px;
+    height:24px;
+    background:rgba(255,255,255,.3);
+  }
+ 
 </style>
 </head>
 <body>
@@ -1683,11 +1702,7 @@ const defaultTab = USER.rol === 'enfermeria' ? 'pastilleo' : 'captura';
 
 document.getElementById('nav-tabs').innerHTML = allTabs
   .filter(t => t.roles.includes(USER.rol))
-  .map(t =>
-    t.id === 'captura'
-      ? `<button class="tb${t.id===defaultTab?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')" style="background:rgba(13,107,94,.35);border:1px solid rgba(13,212,182,.3);color:#fff">${t.icon} ${t.label}</button>`
-      : `<button class="tb${t.id===defaultTab?' on':''}" id="tb-${t.id}" onclick="go('${t.id}')">${t.icon} ${t.label}</button>`
-  )
+  .map(t => ...)
   .join('');
 
 if (USER.rol === 'enfermeria') {
@@ -1695,7 +1710,6 @@ if (USER.rol === 'enfermeria') {
 } else {
   go('captura');
 }
-  join('');
   // Dark mode
   if(localStorage.getItem('so_dark')==='1') document.documentElement.classList.add('dark');
   const btn=document.getElementById('btn-dark');if(btn)btn.textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';
