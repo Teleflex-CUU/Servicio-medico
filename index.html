@@ -3141,6 +3141,7 @@ function calcIMCf(){
     if(porcentaje > 100) porcentaje = 100;
     needle.style.left = porcentaje + '%';
   }
+}  
   function cargarDatosClinicosPastilleo(emp){
   const al = document.getElementById('past-alergias');
   const cr = document.getElementById('past-cronicos');
@@ -3150,6 +3151,5 @@ function calcIMCf(){
   al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
   cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
 }
-}  
 </script>
 </body></html>
