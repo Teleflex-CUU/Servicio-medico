@@ -2952,7 +2952,7 @@ function selPastEmp(noEmp){
   document.getElementById('past-emp-nombre').textContent = emp.nombre || '';
   document.getElementById('past-emp-meta').textContent =
     `No. ${emp.noEmp || '—'} · ${emp.planta || '—'} · ${emp.depto || '—'}`;
-}
+
 
   // Hide search, show form
   const drop = document.getElementById('past-drop');
@@ -2989,6 +2989,7 @@ function selPastEmp(noEmp){
 
   // Focus motivo
   setTimeout(()=>{const m=document.getElementById('past-motivo');if(m)m.focus();},150);
+  }
   
 function limpiarPastilleo(){
   _pastEmp = null;
