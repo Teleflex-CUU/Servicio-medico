@@ -3121,7 +3121,7 @@ function calcIMCf(){
   const talla = parseFloat(document.getElementById('f-talla')?.value);
   const imcInput = document.getElementById('f-imc');
   const needle = document.querySelector('.imc-needle');
-
+}
   if(!peso || !talla || talla === 0){
     if(imcInput) imcInput.value = '';
     if(needle) needle.style.left = '0%';
