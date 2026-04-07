@@ -777,34 +777,6 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ─── LOGOS LOGIN FINO ─── */
-.lc-logos{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:20px;
-  margin-bottom:20px;
-  padding-bottom:16px;
-  border-bottom:1px solid var(--bor);
-}
-
-.lc-logos img{
-  width:auto;
-  object-fit:contain;
-}
-
-/* Teleflex */
-.lc-logos img:first-child{
-  height:70px;
-}
-
-/* AUNA */
-.lc-logos img:last-child{
-  height:55px;
-}
- <style>
-  ...todo tu CSS anterior...
-
-  /* 👇 LO QUE PEGASTE */
   .lc-logos{
     display:flex;
     justify-content:center;
@@ -3009,6 +2981,7 @@ function selPastEmp(noEmp){
     else if(frec>=4) h+=`<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#92400E">🟡 Frecuencia moderada:</strong> ${frec} consultas en 30 días.</div>`;
     ca.innerHTML = h;
   }
+  
 
   // Show form
   const form = document.getElementById('past-form');
@@ -3019,12 +2992,39 @@ function selPastEmp(noEmp){
   
 function limpiarPastilleo(){
   _pastEmp = null;
-  const qEl = document.getElementById('past-q'); if(qEl) qEl.value='';
-  const form = document.getElementById('past-form'); if(form) form.style.display='none';
-  const ca = document.getElementById('past-alertas'); if(ca) ca.innerHTML='';
-  const mot = document.getElementById('past-motivo'); if(mot) mot.value='';
-  const tx = document.getElementById('past-tx'); if(tx) tx.value='';
-  setTimeout(()=>{const q=document.getElementById('past-q');if(q)q.focus();},100);
+
+  const q = document.getElementById('past-q');
+  if(q) q.value = '';
+
+  const form = document.getElementById('past-form');
+  if(form) form.style.display = 'none';
+
+  const nombre = document.getElementById('past-emp-nombre');
+  if(nombre) nombre.textContent = '';
+
+  const meta = document.getElementById('past-emp-meta');
+  if(meta) meta.textContent = '';
+
+  const motivo = document.getElementById('past-motivo');
+  if(motivo) motivo.value = '';
+
+  const tx = document.getElementById('past-tx');
+  if(tx) tx.value = '';
+
+  const al = document.getElementById('past-alergias');
+  if(al) al.value = '';
+
+  const cr = document.getElementById('past-cronicos');
+  if(cr) cr.value = '';
+
+  const alertas = document.getElementById('past-alertas');
+  if(alertas) alertas.innerHTML = '';
+
+  const drop = document.getElementById('past-drop');
+  if(drop) {
+    drop.innerHTML = '';
+    drop.classList.remove('show');
+  }
 }
 
 async function guardarPastilleo(){
@@ -3076,6 +3076,7 @@ async function guardarPastilleo(){
     toast('✅ Pastilleo registrado — '+_pastEmp.nombre,'ok');
   } else {
     toast('Guardado local — sin conexión','ok');
+    
   }
 
   // Update today list
