@@ -327,7 +327,7 @@ function imprimirConstancia(){
   abrirVentanaImpresion('Constancia',contenido);
 }
 
-function function imprimirConstanciaFolio(folio){
+function imprimirConstanciaFolio(folio){
   const r = CONS.find(c => c.folio === folio);
   if(!r){
     toast('Consulta no encontrada','err');
