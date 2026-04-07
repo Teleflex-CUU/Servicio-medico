@@ -284,6 +284,7 @@ function getNota(r){
     ${r.cie10?`<span style="background:#CCFBF1;color:#0D9488;padding:2px 8px;border-radius:4px;font-family:monospace;font-weight:700;margin-right:6px">${r.cie10}</span>`:''}
     <strong>${r.diagnostico||'—'}</strong>
   </div>
+  ${r.exploracion?`<div class="sec"><div class="sec-t">Exploración física</div><p style="line-height:1.7">${r.exploracion}</p></div>`:''}
   ${r.plan?`<div class="sec"><div class="sec-t">Plan y tratamiento</div><p style="line-height:1.7">${r.plan}</p></div>`:''}
   ${r.incapacidad&&r.incapacidad!=='No'?`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:10px;margin-bottom:12px">
     <strong>Incapacidad:</strong> ${r.incapacidad} · ${r.incDias||'—'} días (${r.incInicio||'—'} al ${r.incFin||'—'})
@@ -445,18 +446,26 @@ function imprimirPlanNutFolio(folio){
 function buildConsultaFromForm(){
   const g=id=>document.getElementById(id)?.value||'';
   return{
-    folio:'TEMP-'+Date.now(),
-    fecha:g('f-fecha'),hora:g('f-hora'),
-    noEmp:_empActual?.noEmp||'',nombre:_empActual?.nombre||'',
-    planta:_empActual?.planta||'',depto:_empActual?.depto||'',
-    nss:_empActual?.nss||'',
-    tipoAtencion:USER?.rol==='medico'?'MED':'ENF',
-    turno:g('f-turno'),
-    motivoConsulta:g('f-motivo'),
-    cie10:g('f-cie')||'',diagnostico:g('f-dg')||'Consulta general',
-    plan:g('f-plan'),seguimiento:g('f-seg'),
-    incapacidad:g('f-inc'),
-    registradoPor:USER?.nombre||''
+  return{
+  folio:'TEMP-'+Date.now(),
+  fecha:g('f-fecha'),
+  hora:g('f-hora'),
+  noEmp:_empActual?.noEmp||'',
+  nombre:_empActual?.nombre||'',
+  planta:_empActual?.planta||'',
+  depto:_empActual?.depto||'',
+  nss:_empActual?.nss||'',
+  tipoAtencion:USER?.rol==='medico'?'MED':'ENF',
+  turno:g('f-turno'),
+  motivoConsulta:g('f-motivo'),
+  cie10:g('f-cie')||'',
+  diagnostico:g('f-dg')||'Consulta general',
+  exploracion:g('f-exploracion')||'',
+  plan:g('f-plan'),
+  seguimiento:g('f-seg'),
+  incapacidad:g('f-inc'),
+  registradoPor:USER?.nombre||''
+};
   };
 }
 
