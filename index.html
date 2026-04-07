@@ -327,15 +327,46 @@ function imprimirConstancia(){
   abrirVentanaImpresion('Constancia',contenido);
 }
 
-function imprimirConstanciaFolio(folio){
+function function imprimirConstanciaFolio(folio){
   const r = CONS.find(c => c.folio === folio);
   if(!r){
     toast('Consulta no encontrada','err');
     return;
   }
-  abrirVentanaImpresion('Constancia', getNota(r));
-}
 
+  const fecha = new Date().toLocaleDateString('es-MX',{
+    day:'2-digit', month:'long', year:'numeric'
+  });
+
+  const contenido = `${getLogoHeader()}
+  <div style="font-size:16px;font-weight:800;color:#0F2942;margin-bottom:12px;text-align:center">
+    CONSTANCIA DE ATENCIÓN MÉDICA
+  </div>
+  <p style="margin-bottom:14px;line-height:1.8">
+    Se hace constar que el/la C. <strong>${r.nombre || '—'}</strong>,
+    No. Empleado <strong>${r.noEmp || '—'}</strong>,
+    trabajador/a de <strong>Teleflex Medical de México S.A. de C.V.</strong>,
+    planta <strong>${r.planta || '—'}</strong>,
+    recibió atención médica el día <strong>${r.fecha || fecha}</strong>.
+  </p>
+  <div class="pac"><div class="g2">
+    <div class="f"><label>Diagnóstico</label><span>${r.diagnostico || '—'}</span></div>
+    <div class="f"><label>Tratamiento</label><span>${r.plan || 'Indicaciones médicas'}</span></div>
+    <div class="f"><label>Seguimiento</label><span>${r.seguimiento || 'Alta'}</span></div>
+    <div class="f"><label>Próxima cita</label><span>${r.proxCita || 'No aplica'}</span></div>
+  </div></div>
+  <p style="margin-top:14px;font-size:10px;color:#64748B">
+    Se expide la presente constancia a petición del interesado para los fines que considere convenientes.
+  </p>
+  <div class="sig-area">
+    <div class="sig-box">
+      <div class="sig-line">Dr. Jaime Iván Martínez Espinoza<br><small>Cédula 12021447 · Medicina del Trabajo</small></div>
+    </div>
+  </div>`;
+
+  abrirVentanaImpresion('Constancia', contenido);
+}
+  
 function imprimirConstanciaInc(folio){
   const r=INC.find(i=>i.folio===folio);
   if(!r){toast('Incapacidad no encontrada','err');return;}
@@ -447,28 +478,26 @@ function imprimirPlanNutFolio(folio){
 }
 
 function buildConsultaFromForm(){
-  const g=id=>document.getElementById(id)?.value||'';
-  return{
-  return{
-  folio:'TEMP-'+Date.now(),
-  fecha:g('f-fecha'),
-  hora:g('f-hora'),
-  noEmp:_empActual?.noEmp||'',
-  nombre:_empActual?.nombre||'',
-  planta:_empActual?.planta||'',
-  depto:_empActual?.depto||'',
-  nss:_empActual?.nss||'',
-  tipoAtencion:USER?.rol==='medico'?'MED':'ENF',
-  turno:g('f-turno'),
-  motivoConsulta:g('f-motivo'),
-  cie10:g('f-cie')||'',
-  diagnostico:g('f-dg')||'Consulta general',
-  exploracion:g('f-exploracion')||'',
-  plan:g('f-plan'),
-  seguimiento:g('f-seg'),
-  incapacidad:g('f-inc'),
-  registradoPor:USER?.nombre||''
-};
+  const g = id => document.getElementById(id)?.value || '';
+  return {
+    folio: 'TEMP-' + Date.now(),
+    fecha: g('f-fecha'),
+    hora: g('f-hora'),
+    noEmp: _empActual?.noEmp || '',
+    nombre: _empActual?.nombre || '',
+    planta: _empActual?.planta || '',
+    depto: _empActual?.depto || '',
+    nss: _empActual?.nss || '',
+    tipoAtencion: USER?.rol === 'medico' ? 'MED' : 'ENF',
+    turno: g('f-turno'),
+    motivoConsulta: g('f-motivo'),
+    cie10: g('f-cie') || '',
+    diagnostico: g('f-dg') || 'Consulta general',
+    exploracion: g('f-exploracion') || '',
+    plan: g('f-plan'),
+    seguimiento: g('f-seg'),
+    incapacidad: g('f-inc'),
+    registradoPor: USER?.nombre || ''
   };
 }
 
