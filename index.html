@@ -3122,7 +3122,7 @@ function calcIMCf(){
   const talla = parseFloat(document.getElementById('f-talla')?.value);
   const imcInput = document.getElementById('f-imc');
   const needle = document.querySelector('.imc-needle');
-}
+
   if(!peso || !talla || talla === 0){
     if(imcInput) imcInput.value = '';
     if(needle) needle.style.left = '0%';
@@ -3130,17 +3130,15 @@ function calcIMCf(){
   }
 
   const imc = peso / (talla * talla);
+  if(imcInput) imcInput.value = imc.toFixed(2);
 
-  if(imcInput){
-    imcInput.value = imc.toFixed(2);
-  }
-
-  // mover aguja
   if(needle){
-    let porcentaje = (imc / 40) * 100;
-    if(porcentaje > 100) porcentaje = 100;
-    needle.style.left = porcentaje + '%';
-  }  
+    const min = 10;
+    const max = 40;
+    const percent = Math.min(100, Math.max(0, ((imc - min) / (max - min)) * 100));
+    needle.style.left = percent + '%';
+  }
+}
   function cargarDatosClinicosPastilleo(emp){
   const al = document.getElementById('past-alergias');
   const cr = document.getElementById('past-cronicos');
