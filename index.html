@@ -301,9 +301,12 @@ function imprimirNotaMed(){
 }
 
 function imprimirNotaMedFolio(folio){
-  const r=CONS.find(c=>c.folio===folio);
-  if(!r){toast('Consulta no encontrada','err');return;}
-  abrirVentanaImpresion('Nota Médica',getNota(r));
+  const r = (_expData?.consultas || CONS).find(c => c.folio === folio);
+  if(!r){
+    toast('Consulta no encontrada','err');
+    return;
+  }
+  abrirVentanaImpresion('Nota Médica', getNota(r));
 }
 
 function imprimirConstancia(){
