@@ -2724,46 +2724,24 @@ function limpiarCitaMain(){
 }
 
 async function cambiarEstadoCita(id){
-  const r=CITAS.find(x=>String(x.id||x.ID)===String(id));if(!r)return;
-  const opts=['Pendiente','Confirmada','Completada','Cancelada'];
-  r.estado=opts[(opts.indexOf(r.estado||'Pendiente')+1)%opts.length];
-  sv(SK.citas,CITAS);renderCitas();
-  await gasPost({action:'updateCita',id,estado:r.estado});
-  function abrirConsultaDesdeCita(id){
-  const cita = CITAS.find(x => String(x.id || x.ID) === String(id));
+  const r = CITAS.find(x => String(x.id || x.ID) === String(id));
+  if(!r) return;
+
+  const opts = ['Pendiente','Confirmada','Completada','Cancelada'];
+  r.estado = opts[(opts.indexOf(r.estado || 'Pendiente') + 1) % opts.length];
+
+  sv(SK.citas, CITAS);
+  renderCitas();
+
+  await gasPost({ action:'updateCita', id, estado:r.estado });
+}
+
+function abrirConsultaDesdeCita(id){
+  const cita = (CITAS || []).find(x => String(x.id || x.ID) === String(id));
   if(!cita){
     toast('Cita no encontrada','err');
     return;
   }
-    function imprimirComprobanteCita(id){
-  const r = CITAS.find(x => String(x.id || x.ID) === String(id));
-  if(!r){
-    toast('Cita no encontrada','err');
-    return;
-  }
-
-  const contenido = `
-    ${getLogoHeader()}
-    <div style="font-size:16px;font-weight:800;color:#0F2942;margin-bottom:12px;text-align:center">
-      COMPROBANTE DE CITA
-    </div>
-
-    <div class="pac g2">
-      <div class="f"><label>Paciente</label><span>${r.nombre || '—'}</span></div>
-      <div class="f"><label>No. Empleado</label><span>${r.noEmp || '—'}</span></div>
-      <div class="f"><label>Área</label><span>${r.area || '—'}</span></div>
-      <div class="f"><label>Estado</label><span>${r.estado || 'Pendiente'}</span></div>
-      <div class="f"><label>Fecha</label><span>${r.fecha || '—'}</span></div>
-      <div class="f"><label>Hora</label><span>${r.hora || '—'}</span></div>
-      <div class="f"><label>Planta</label><span>${r.planta || '—'}</span></div>
-      <div class="f"><label>Turno</label><span>${r.turno || '—'}</span></div>
-      <div class="f"><label>Motivo</label><span>${r.motivo || '—'}</span></div>
-      <div class="f"><label>Notas</label><span>${r.notas || '—'}</span></div>
-    </div>
-  `;
-
-  abrirVentanaImpresion('Comprobante de cita', contenido);
-}
 
   const emp = (HC || []).find(x => String(x.noEmp) === String(cita.noEmp));
   if(!emp){
@@ -2771,17 +2749,13 @@ async function cambiarEstadoCita(id){
     return;
   }
 
-  // Guardamos referencia de la cita actual
   window._citaActual = cita;
 
-  // Cargamos empleado actual
   _empActual = emp;
   _capEmp = emp;
 
-  // Nos vamos a Consulta
   go('captura');
 
-  // Pintamos encabezado y formulario médico
   const ch = document.getElementById('cap-emp-header');
   if(ch){
     ch.innerHTML = `
@@ -2820,21 +2794,52 @@ async function cambiarEstadoCita(id){
     form.innerHTML = buildCapFormMed(emp);
   }
 
-  // Precargar datos de la cita en la nota
   const motivo = document.getElementById('f-motivo');
-  if(motivo && !motivo.value) motivo.value = cita.motivo || '';
+  if(motivo && !motivo.value){
+    motivo.value = cita.motivo || '';
+  }
 
   const prox = document.getElementById('f-prox');
   if(prox && cita.fecha){
     const partes = String(cita.fecha).split('/');
     if(partes.length === 3){
-      const iso = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
-      prox.value = iso;
+      const dd = partes[0].padStart(2,'0');
+      const mm = partes[1].padStart(2,'0');
+      const yyyy = partes[2];
+      prox.value = `${yyyy}-${mm}-${dd}`;
     }
   }
 }
-}
 
+function imprimirComprobanteCita(id){
+  const r = (CITAS || []).find(x => String(x.id || x.ID) === String(id));
+  if(!r){
+    toast('Cita no encontrada','err');
+    return;
+  }
+
+  const contenido = `
+    ${getLogoHeader()}
+    <div style="font-size:16px;font-weight:800;color:#0F2942;margin-bottom:12px;text-align:center">
+      COMPROBANTE DE CITA
+    </div>
+
+    <div class="pac g2">
+      <div class="f"><label>Paciente</label><span>${r.nombre || '—'}</span></div>
+      <div class="f"><label>No. Empleado</label><span>${r.noEmp || '—'}</span></div>
+      <div class="f"><label>Área</label><span>${r.area || '—'}</span></div>
+      <div class="f"><label>Estado</label><span>${r.estado || 'Pendiente'}</span></div>
+      <div class="f"><label>Fecha</label><span>${r.fecha || '—'}</span></div>
+      <div class="f"><label>Hora</label><span>${r.hora || '—'}</span></div>
+      <div class="f"><label>Planta</label><span>${r.planta || '—'}</span></div>
+      <div class="f"><label>Turno</label><span>${r.turno || '—'}</span></div>
+      <div class="f"><label>Motivo</label><span>${r.motivo || '—'}</span></div>
+      <div class="f"><label>Notas</label><span>${r.notas || '—'}</span></div>
+    </div>
+  `;
+
+  abrirVentanaImpresion('Comprobante de cita', contenido);
+}
 
 // ════════════════════════════════════════════════════════════════
 // DASHBOARD
