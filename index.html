@@ -2686,7 +2686,7 @@ async function guardarCitaMain(){
   limpiarCitaMain();
 }
 
-  function limpiarCitaMain(){
+function limpiarCitaMain(){
   const ids = [
     'cit-q-main',
     'cit-es-main',
@@ -2706,31 +2706,6 @@ async function guardarCitaMain(){
 
   const urg = document.getElementById('cit-urg-main');
   if(urg) urg.value = 'Normal';
-
-  const hora = document.getElementById('cit-hora-main');
-  if(hora) hora.value = '08:00';
-
-  const fecha = document.getElementById('cit-fecha-main');
-  if(fecha){
-    const hoy = new Date().toISOString().split('T')[0];
-    fecha.value = hoy;
-    fecha.min = hoy;
-  }
-
-  const ec = document.getElementById('cit-ec-main');
-  if(ec) ec.innerHTML = '';
-
-  const drop = document.getElementById('cit-drop-main');
-  if(drop){
-    drop.innerHTML = '';
-    drop.classList.remove('show');
-  }
-}
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
 
   const hora = document.getElementById('cit-hora-main');
   if(hora) hora.value = '08:00';
