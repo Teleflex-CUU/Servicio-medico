@@ -2092,6 +2092,32 @@ async function guardarConsulta(tipo){
   setSyncDot(r.ok?'ok':'err');
   toast(r.ok?'✅ '+tipo+' guardado — '+emp.nombre:'⚠️ Guardado local','ok');
   if(_expData){_expData.consultas=[cons,...(_expData.consultas||[])];if(!_expData.resumen)_expData.resumen={alergias:[],cronicos:[]};if(cons.alergias)cons.alergias.split(/[,;]+/).forEach(a=>{a=a.trim();if(a&&!_expData.resumen.alergias.map(x=>x.toLowerCase()).includes(a.toLowerCase()))_expData.resumen.alergias.push(a);});if(cons.cronicos)cons.cronicos.split(/[,;]+/).forEach(c=>{c=c.trim();if(c&&!_expData.resumen.cronicos.map(x=>x.toLowerCase()).includes(c.toLowerCase()))_expData.resumen.cronicos.push(c);});}  renderHistorial(_histFiltro);
+if(tipo === 'MED' && window._citaActual){
+  const citaId = window._citaActual.id || window._citaActual.ID;
+  const cita = CITAS.find(x => String(x.id || x.ID) === String(citaId));
+
+  if(cita){
+    cita.estado = 'Completada';
+    cita.folioConsulta = reg?.folio || '';
+    cita.fechaAtencion = new Date().toLocaleDateString('es-MX');
+    cita.atendidoPor = USER?.nombre || '';
+    sv(SK.citas, CITAS);
+    renderCitas();
+
+    try{
+      await gasPost({
+        action:'updateCita',
+        id:citaId,
+        estado:'Completada',
+        folioConsulta: reg?.folio || '',
+        fechaAtencion: cita.fechaAtencion,
+        atendidoPor: cita.atendidoPor
+      });
+    }catch(e){}
+  }
+
+  window._citaActual = null;
+}
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2429,10 +2455,18 @@ function renderCitas(){
         <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
           <span class="pill ${ec}">${estado}</span>
           <button class="btn btn-gh btn-xs" onclick="cambiarEstadoCita('${r.id||r.ID}')">↺ Estado</button>
+          ${(r.area||'')==='MED' ? `
+  <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id||r.ID}')">🩺 Abrir consulta</button>
+` : ''}
+
+<button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id||r.ID}')">🖨️ Imprimir</button>
         </div>
       </div>
     </div>`;
   }).join('');
+ ${r.folioConsulta ? `
+  <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">📄 Nota</button>
+` : ''}
 }
 async function guardarCita(){
   const noEmp=g('cit-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
@@ -2633,14 +2667,112 @@ async function cambiarEstadoCita(id){
   r.estado=opts[(opts.indexOf(r.estado||'Pendiente')+1)%opts.length];
   sv(SK.citas,CITAS);renderCitas();
   await gasPost({action:'updateCita',id,estado:r.estado});
+  function abrirConsultaDesdeCita(id){
+  const cita = CITAS.find(x => String(x.id || x.ID) === String(id));
+  if(!cita){
+    toast('Cita no encontrada','err');
+    return;
+  }
+    function imprimirComprobanteCita(id){
+  const r = CITAS.find(x => String(x.id || x.ID) === String(id));
+  if(!r){
+    toast('Cita no encontrada','err');
+    return;
+  }
+
+  const contenido = `
+    ${getLogoHeader()}
+    <div style="font-size:16px;font-weight:800;color:#0F2942;margin-bottom:12px;text-align:center">
+      COMPROBANTE DE CITA
+    </div>
+
+    <div class="pac g2">
+      <div class="f"><label>Paciente</label><span>${r.nombre || '—'}</span></div>
+      <div class="f"><label>No. Empleado</label><span>${r.noEmp || '—'}</span></div>
+      <div class="f"><label>Área</label><span>${r.area || '—'}</span></div>
+      <div class="f"><label>Estado</label><span>${r.estado || 'Pendiente'}</span></div>
+      <div class="f"><label>Fecha</label><span>${r.fecha || '—'}</span></div>
+      <div class="f"><label>Hora</label><span>${r.hora || '—'}</span></div>
+      <div class="f"><label>Planta</label><span>${r.planta || '—'}</span></div>
+      <div class="f"><label>Turno</label><span>${r.turno || '—'}</span></div>
+      <div class="f"><label>Motivo</label><span>${r.motivo || '—'}</span></div>
+      <div class="f"><label>Notas</label><span>${r.notas || '—'}</span></div>
+    </div>
+  `;
+
+  abrirVentanaImpresion('Comprobante de cita', contenido);
 }
-async function cambiarEstadoCita(id){
-  const r=CITAS.find(x=>String(x.id||x.ID)===String(id));if(!r)return;
-  const opts=['Pendiente','Confirmada','Completada','Cancelada'];
-  r.estado=opts[(opts.indexOf(r.estado||'Pendiente')+1)%opts.length];
-  sv(SK.citas,CITAS);renderCitas();
-  await gasPost({action:'updateCita',id,estado:r.estado});
+
+  const emp = (HC || []).find(x => String(x.noEmp) === String(cita.noEmp));
+  if(!emp){
+    toast('Empleado no encontrado en HC','err');
+    return;
+  }
+
+  // Guardamos referencia de la cita actual
+  window._citaActual = cita;
+
+  // Cargamos empleado actual
+  _empActual = emp;
+  _capEmp = emp;
+
+  // Nos vamos a Consulta
+  go('captura');
+
+  // Pintamos encabezado y formulario médico
+  const ch = document.getElementById('cap-emp-header');
+  if(ch){
+    ch.innerHTML = `
+      <div class="ec">
+        <div class="ec-name">
+          ${emp.nombre || '—'}
+          <span class="ec-tag">No. ${emp.noEmp || '—'}</span>
+        </div>
+        <div class="ec-grid">
+          <div class="ec-f"><label>Planta</label><span>${emp.planta || '—'}</span></div>
+          <div class="ec-f"><label>Depto</label><span>${emp.depto || '—'}</span></div>
+          <div class="ec-f"><label>Turno</label><span>${emp.turno || '—'}</span></div>
+          <div class="ec-f"><label>NSS</label><span>${emp.nss || '—'}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const titulo = document.getElementById('cap-titulo');
+  if(titulo) titulo.textContent = 'Consulta médica desde cita';
+
+  const sub = document.getElementById('cap-sub');
+  if(sub) sub.textContent = `Cita: ${cita.fecha || '—'} ${cita.hora || ''} · ${cita.motivo || ''}`;
+
+  const alertas = document.getElementById('cap-alertas');
+  if(alertas){
+    alertas.innerHTML = `
+      <div class="alert alert-bl" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8">
+        📅 Cita abierta: ${cita.fecha || '—'} ${cita.hora || ''} · Motivo: ${cita.motivo || '—'}
+      </div>
+    `;
+  }
+
+  const form = document.getElementById('cap-form-container');
+  if(form){
+    form.innerHTML = buildCapFormMed(emp);
+  }
+
+  // Precargar datos de la cita en la nota
+  const motivo = document.getElementById('f-motivo');
+  if(motivo && !motivo.value) motivo.value = cita.motivo || '';
+
+  const prox = document.getElementById('f-prox');
+  if(prox && cita.fecha){
+    const partes = String(cita.fecha).split('/');
+    if(partes.length === 3){
+      const iso = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+      prox.value = iso;
+    }
+  }
 }
+}
+
 
 // ════════════════════════════════════════════════════════════════
 // DASHBOARD
