@@ -79,6 +79,8 @@ function buildCapFormEnf(emp){
     <div class="fi"><label>Retorno</label><input type="date" id="f-inc-fin" readonly></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+  <button class="btn btn-bl" onclick="openModal('mo-cita')">📅 Agendar cita</button>
+  
     <button class="btn" onclick="guardarConsulta('ENF')">💾 Guardar</button>
     <button class="btn btn-gh" onclick="imprimirConstancia()">🖨️ Constancia</button>
   </div>
@@ -145,6 +147,7 @@ function buildCapFormMed(emp){
   </div>
   <div class="fi"><label>Próxima cita</label><input type="date" id="f-prox"></div>
   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+  <button class="btn btn-bl" onclick="openModal('mo-cita')">📅 Agendar cita</button>
     <button class="btn" onclick="guardarConsulta('MED')">💾 Guardar</button>
     <button class="btn btn-gh" onclick="imprimirNotaMed()">📄 Nota</button>
     <button class="btn btn-gh" onclick="imprimirReceta()">💊 Receta</button>
