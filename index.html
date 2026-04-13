@@ -2060,66 +2060,174 @@ function toggleIncBlock(){const v=g('f-incap');const b=document.getElementById('
 // GUARDAR CONSULTA
 // ════════════════════════════════════════════════════════════════
 async function guardarConsulta(tipo){
-  const emp=_capEmp||_empActual;if(!emp){toast('Selecciona un empleado primero','err');return;}
-  const diag=g('f-dg')||'Consulta general';
-  const cie10val=g('f-cie')||'';
-  const ahora=new Date();
-  const folio=tipo+'-'+Date.now().toString().slice(-6);
-  const APS=['Cabeza y cuello','Cardiovascular','Respiratorio','Digestivo','Genitourinario','Musculoesquelético','Neurológico','Dermatológico'];
-  let aps={};
-  if(tipo==='MED'){APS.forEach(ap=>{const id='ap-'+ap.replace(/\s+/g,'-');const r=document.getElementById(id+'-r');const n=document.getElementById(id+'-n');aps[ap]={r:r?r.value:'Normal',n:n?n.value:''};});}
-  const cons={
-    folio,tipoAtencion:tipo,tipoCons:g('f-tipo'),
-    fecha:ahora.toLocaleDateString('es-MX'),hora:ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
-    mes:MESES[ahora.getMonth()],mesNum:ahora.getMonth()+1,anio:ahora.getFullYear(),semana:getWeek(ahora),
-    noEmp:emp.noEmp,nombre:emp.nombre,planta:emp.planta,turno:emp.turno||USER.turno,
-    depto:emp.depto,puesto:emp.puesto,nss:emp.nss,genero:emp.genero,
-    cie10:g('f-cv'),diagnostico:diag,alergias:g('f-al')||'',cronicos:g('f-cr')||'',
-    ta:g('f-ta'),fc:g('f-fc'),fr:g('f-fr'),temp:g('f-temp'),
-    peso:g('f-peso'),talla:g('f-talla'),spo2:g('f-spo2'),glucosa:g('f-gluc'),imc:g('f-imc')||'',
-    motivoConsulta:g('f-motivo')||'',plan:g('f-plan'),seguimiento:g('f-seg')||'',
-    incapacidad:g('f-incap')||'No',incInicio:g('f-ii'),incFin:g('f-if'),incDias:g('f-ds'),
-    objetivo:'',kcal:'',proteinas:'',carbos:'',grasas:'',
-    imcCategoria:g('f-imc')||'',
-    pesoMeta:'',comorbilidades:g('f-cr')||'',recomendaciones:'',
-    menu:'',
-    proxCita:'',registradoPor:USER.nombre,aps:JSON.stringify(aps)
-  };
-  CONS.push(cons);sv(SK.cons,CONS);
-  if(cons.incapacidad&&cons.incapacidad!=='No'&&cons.incInicio){const inc={...cons,tipo:cons.incapacidad,estado:'Activa'};INC.push(inc);sv(SK.inc,INC);await gasPost({action:'saveInc',val:inc});}
-  toast('⏳ Guardando...','inf');setSyncDot('busy');
-  const r=await gasPost({action:'saveConsulta',val:cons});
-  setSyncDot(r.ok?'ok':'err');
-  toast(r.ok?'✅ '+tipo+' guardado — '+emp.nombre:'⚠️ Guardado local','ok');
-  if(_expData){_expData.consultas=[cons,...(_expData.consultas||[])];if(!_expData.resumen)_expData.resumen={alergias:[],cronicos:[]};if(cons.alergias)cons.alergias.split(/[,;]+/).forEach(a=>{a=a.trim();if(a&&!_expData.resumen.alergias.map(x=>x.toLowerCase()).includes(a.toLowerCase()))_expData.resumen.alergias.push(a);});if(cons.cronicos)cons.cronicos.split(/[,;]+/).forEach(c=>{c=c.trim();if(c&&!_expData.resumen.cronicos.map(x=>x.toLowerCase()).includes(c.toLowerCase()))_expData.resumen.cronicos.push(c);});}  renderHistorial(_histFiltro);
-if(tipo === 'MED' && window._citaActual){
-  const citaId = window._citaActual.id || window._citaActual.ID;
-  const cita = CITAS.find(x => String(x.id || x.ID) === String(citaId));
-
-  if(cita){
-    cita.estado = 'Completada';
-    cita.folioConsulta = reg?.folio || '';
-    cita.fechaAtencion = new Date().toLocaleDateString('es-MX');
-    cita.atendidoPor = USER?.nombre || '';
-    sv(SK.citas, CITAS);
-    renderCitas();
-
-    try{
-      await gasPost({
-        action:'updateCita',
-        id:citaId,
-        estado:'Completada',
-        folioConsulta: reg?.folio || '',
-        fechaAtencion: cita.fechaAtencion,
-        atendidoPor: cita.atendidoPor
-      });
-    }catch(e){}
+  const emp = _capEmp || _empActual;
+  if(!emp){
+    toast('Selecciona un empleado primero','err');
+    return;
   }
 
-  window._citaActual = null;
-}
-}
+  const diag = g('f-dg') || 'Consulta general';
+  const cie10val = g('f-cie') || '';
+  const ahora = new Date();
+  const folio = tipo + '-' + Date.now().toString().slice(-6);
+  const APS = [
+    'Cabeza y cuello',
+    'Cardiovascular',
+    'Respiratorio',
+    'Digestivo',
+    'Genitourinario',
+    'Musculoesquelético',
+    'Neurológico',
+    'Dermatológico'
+  ];
 
+  let aps = {};
+  if(tipo === 'MED'){
+    APS.forEach(ap => {
+      const id = 'ap-' + ap.replace(/\s+/g,'-');
+      const r = document.getElementById(id + '-r');
+      const n = document.getElementById(id + '-n');
+      aps[ap] = {
+        r: r ? r.value : 'Normal',
+        n: n ? n.value : ''
+      };
+    });
+  }
+
+  const cons = {
+    folio,
+    tipoAtencion: tipo,
+    tipoCons: g('f-tipo'),
+    fecha: ahora.toLocaleDateString('es-MX'),
+    hora: ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    mes: MESES[ahora.getMonth()],
+    mesNum: ahora.getMonth() + 1,
+    anio: ahora.getFullYear(),
+    semana: getWeek(ahora),
+    noEmp: emp.noEmp,
+    nombre: emp.nombre,
+    planta: emp.planta,
+    turno: emp.turno || USER.turno,
+    depto: emp.depto,
+    puesto: emp.puesto,
+    nss: emp.nss,
+    genero: emp.genero,
+    cie10: g('f-cv'),
+    diagnostico: diag,
+    alergias: g('f-al') || '',
+    cronicos: g('f-cr') || '',
+    ta: g('f-ta'),
+    fc: g('f-fc'),
+    fr: g('f-fr'),
+    temp: g('f-temp'),
+    peso: g('f-peso'),
+    talla: g('f-talla'),
+    spo2: g('f-spo2'),
+    glucosa: g('f-gluc'),
+    imc: g('f-imc') || '',
+    motivoConsulta: g('f-motivo') || '',
+    plan: g('f-plan'),
+    seguimiento: g('f-seg') || '',
+    incapacidad: g('f-incap') || 'No',
+    incInicio: g('f-ii'),
+    incFin: g('f-if'),
+    incDias: g('f-ds'),
+    objetivo: '',
+    kcal: '',
+    proteinas: '',
+    carbos: '',
+    grasas: '',
+    imcCategoria: g('f-imc') || '',
+    pesoMeta: '',
+    comorbilidades: g('f-cr') || '',
+    recomendaciones: '',
+    menu: '',
+    proxCita: '',
+    registradoPor: USER.nombre,
+    aps: JSON.stringify(aps)
+  };
+
+  CONS.push(cons);
+  sv(SK.cons, CONS);
+
+  if(cons.incapacidad && cons.incapacidad !== 'No' && cons.incInicio){
+    const inc = { ...cons, tipo: cons.incapacidad, estado:'Activa' };
+    INC.push(inc);
+    sv(SK.inc, INC);
+    await gasPost({ action:'saveInc', val:inc });
+  }
+
+  toast('⏳ Guardando...','inf');
+  setSyncDot('busy');
+
+  const r = await gasPost({ action:'saveConsulta', val:cons });
+
+  setSyncDot(r.ok ? 'ok' : 'err');
+  toast(r.ok ? '✅ ' + tipo + ' guardado — ' + emp.nombre : '⚠️ Guardado local','ok');
+
+  if(_expData){
+    _expData.consultas = [cons, ...(_expData.consultas || [])];
+
+    if(!_expData.resumen){
+      _expData.resumen = { alergias:[], cronicos:[] };
+    }
+
+    if(cons.alergias){
+      cons.alergias.split(/[,;]+/).forEach(a => {
+        a = a.trim();
+        if(
+          a &&
+          !_expData.resumen.alergias.map(x => x.toLowerCase()).includes(a.toLowerCase())
+        ){
+          _expData.resumen.alergias.push(a);
+        }
+      });
+    }
+
+    if(cons.cronicos){
+      cons.cronicos.split(/[,;]+/).forEach(c => {
+        c = c.trim();
+        if(
+          c &&
+          !_expData.resumen.cronicos.map(x => x.toLowerCase()).includes(c.toLowerCase())
+        ){
+          _expData.resumen.cronicos.push(c);
+        }
+      });
+    }
+  }
+
+  renderHistorial(_histFiltro);
+
+  // ✅ Si viene de una cita médica, marcarla como completada
+  if(tipo === 'MED' && window._citaActual){
+    const citaId = window._citaActual.id || window._citaActual.ID;
+    const cita = CITAS.find(x => String(x.id || x.ID) === String(citaId));
+
+    if(cita){
+      cita.estado = 'Completada';
+      cita.folioConsulta = cons.folio || '';
+      cita.fechaAtencion = new Date().toLocaleDateString('es-MX');
+      cita.atendidoPor = USER?.nombre || '';
+
+      sv(SK.citas, CITAS);
+      renderCitas();
+
+      try{
+        await gasPost({
+          action:'updateCita',
+          id: citaId,
+          estado:'Completada',
+          folioConsulta: cons.folio || '',
+          fechaAtencion: cita.fechaAtencion,
+          atendidoPor: cita.atendidoPor
+        });
+      }catch(e){}
+    }
+
+    window._citaActual = null;
+  }
+}
 // ════════════════════════════════════════════════════════════════
 // HISTORIAL
 // ════════════════════════════════════════════════════════════════
