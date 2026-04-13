@@ -2419,70 +2419,141 @@ function sugFechaCita(){
   sug.textContent='Próximo '+dia+': '+next.toLocaleDateString('es-MX',{day:'numeric',month:'long'});
 }
 function renderCitas(){
-  
-   const hoy = new Date().toISOString().split('T')[0];
+  const hoy = new Date().toISOString().split('T')[0];
 
-  const f = document.getElementById('cit-fecha-main');
-  if(f){
-    f.min = hoy;
-    if(!f.value) f.value = hoy;
+  // Fecha automática del bloque principal de agenda
+  const fMain = document.getElementById('cit-fecha-main');
+  if(fMain){
+    fMain.min = hoy;
+    if(!fMain.value) fMain.value = hoy;
   }
 
-  const h = document.getElementById('cit-hora-main');
-  if(h && !h.value){
-    h.value = '08:00';
-  const fa=(document.getElementById('cit-fa')||{}).value||'';
-  const fp=(document.getElementById('cit-fp')||{}).value||'';
-  const fe=(document.getElementById('cit-fe')||{}).value||'';
-  let lista=[...CITAS].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
-  if(fa)lista=lista.filter(r=>(r.area||'')===fa);
-  if(fp)lista=lista.filter(r=>normEq(r.planta,fp));
-  if(fe)lista=lista.filter(r=>(r.estado||'')===fe);
-  const el=document.getElementById('citas-lista');if(!el)return;
-  document.getElementById('citas-cnt').textContent=lista.length+' citas';
-  if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">📅</div>'+(CITAS.length?'Sin resultados':'Sin citas. Usa 🔄 Sync.')+'</div>';return;}
-  el.innerHTML=lista.map(r=>{
-    const urg=r.urgencia==='Urgente'?'🔴':r.urgencia==='Prioritario'?'🟡':'🟢';
-    const estado=r.estado||'Pendiente';const ec=estado==='Completada'?'pgr':estado==='Cancelada'?'pgy':estado==='Confirmada'?'ptl':'pam';
-    return `<div class="card" style="padding:12px 16px;margin-bottom:8px">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px">
+  const hMain = document.getElementById('cit-hora-main');
+  if(hMain && !hMain.value){
+    hMain.value = '08:00';
+  }
 
-    <div>
-      <div style="font-weight:700">${r.nombre || '—'}</div>
-      <div style="font-size:11px;color:var(--tx3)">
-        ${r.fecha || '—'} · ${r.hora || ''} · ${r.motivo || ''}
+  // Filtros del listado de citas
+  const fa = (document.getElementById('cit-fa') || {}).value || '';
+  const fp = (document.getElementById('cit-fp') || {}).value || '';
+  const fe = (document.getElementById('cit-fe') || {}).value || '';
+
+  let lista = [...(CITAS || [])];
+
+  // Orden simple por fecha y hora
+  lista.sort((a, b) => {
+    const faTxt = String(a.fecha || '');
+    const fbTxt = String(b.fecha || '');
+    if(faTxt !== fbTxt) return faTxt.localeCompare(fbTxt);
+    return String(a.hora || '').localeCompare(String(b.hora || ''));
+  });
+
+  if(fa){
+    lista = lista.filter(r => (r.area || '') === fa);
+  }
+
+  if(fp){
+    lista = lista.filter(r => normEq(r.planta, fp));
+  }
+
+  if(fe){
+    lista = lista.filter(r => (r.estado || '') === fe);
+  }
+
+  const el = document.getElementById('citas-lista');
+  if(!el) return;
+
+  const cnt = document.getElementById('citas-cnt');
+  if(cnt) cnt.textContent = lista.length + ' citas';
+
+  if(!lista.length){
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-i">📅</div>
+        ${CITAS && CITAS.length ? 'Sin resultados' : 'Sin citas registradas'}
       </div>
-    </div>
+    `;
+    return;
+  }
 
-    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+  el.innerHTML = lista.map(r => {
+    const urg =
+      r.urgencia === 'Urgente' ? '🔴' :
+      r.urgencia === 'Prioritario' ? '🟡' :
+      '🟢';
 
-      <span class="pill">${r.estado || 'Pendiente'}</span>
+    const estado = r.estado || 'Pendiente';
 
-      <button class="btn btn-gh btn-xs" onclick="cambiarEstadoCita('${r.id||r.ID}')">↺ Estado</button>
+    const ec =
+      estado === 'Completada' ? 'pgr' :
+      estado === 'Cancelada' ? 'pgy' :
+      estado === 'Confirmada' ? 'ptl' :
+      'pam';
 
-      ${(r.area||'')==='MED' ? `
-        <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id||r.ID}')">🩺 Abrir consulta</button>
-      ` : ''}
+    const borde =
+      estado === 'Pendiente' ? 'var(--am)' :
+      estado === 'Completada' ? 'var(--gr)' :
+      estado === 'Cancelada' ? 'var(--rd)' :
+      'var(--bor2)';
 
-      ${r.folioConsulta ? `
-        <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">📄 Nota</button>
-      ` : ''}
+    return `
+      <div class="card cp" style="margin-bottom:8px;border-left:3px solid ${borde}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
 
-      <button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id||r.ID}')">🖨️ Imprimir</button>
+          <div style="flex:1">
+            <div style="font-weight:700">${urg} ${r.nombre || '—'}</div>
+            <div style="font-size:12px;color:var(--tx2)">
+              No. ${r.noEmp || '—'} · ${r.planta || '—'} · ${r.area || '—'}
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--nv);margin-top:2px">
+              ${r.fecha || '—'} · ${r.hora || '—'}
+            </div>
+            <div style="font-size:12px;color:var(--tx2)">
+              ${r.motivo || '—'}
+            </div>
+            ${
+              r.notas
+                ? `<div style="font-size:11px;color:var(--tx3);margin-top:4px">${r.notas}</div>`
+                : ''
+            }
+          </div>
 
-    </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            <span class="pill ${ec}">${estado}</span>
 
-  </div>
-</div>
-`;
+            <button class="btn btn-gh btn-xs" onclick="cambiarEstadoCita('${r.id || r.ID}')">
+              ↺ Estado
+            </button>
 
-<button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id||r.ID}')">🖨️ Imprimir</button>
+            ${
+              (r.area || '') === 'MED'
+                ? `
+                  <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id || r.ID}')">
+                    🩺 Abrir consulta
+                  </button>
+                `
+                : ''
+            }
+
+            ${
+              r.folioConsulta
+                ? `
+                  <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">
+                    📄 Nota
+                  </button>
+                `
+                : ''
+            }
+
+            <button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id || r.ID}')">
+              🖨️ Imprimir
+            </button>
+          </div>
+
         </div>
       </div>
-    </div>`;
+    `;
   }).join('');
- 
-    <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id||r.ID}')">🩺 Abrir consulta</button>
 }
 async function guardarCita(){
   const noEmp=g('cit-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
