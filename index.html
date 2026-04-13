@@ -2467,6 +2467,7 @@ function renderCitas(){
  ${r.folioConsulta ? `
   <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">📄 Nota</button>
 ` : ''}
+    <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id||r.ID}')">🩺 Abrir consulta</button>
 }
 async function guardarCita(){
   const noEmp=g('cit-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
