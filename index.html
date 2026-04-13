@@ -1194,6 +1194,71 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <select id="cit-fp" onchange="renderCitas()"><option value="">Todas las plantas</option><option>Américas</option><option>Barrancas</option><option>Cantera</option><option>Juventud</option></select>
     <select id="cit-fe" onchange="renderCitas()"><option value="">Todos</option><option>Pendiente</option><option>Confirmada</option><option>Completada</option><option>Cancelada</option></select>
   </div>
+  <div class="card cp" style="margin-bottom:14px">
+  <div class="sec-t">🔍 Agendar cita</div>
+
+  <div class="sw" style="margin-bottom:10px">
+    <span class="si">🔍</span>
+    <input
+      type="text"
+      id="cit-q-main"
+      placeholder="No. empleado o nombre..."
+      oninput="buscarCitaMain(this.value)"
+      autocomplete="off"
+      style="font-size:14px;font-weight:600"
+    >
+    <div class="sd" id="cit-drop-main"></div>
+  </div>
+
+  <input type="hidden" id="cit-es-main">
+
+  <div id="cit-ec-main" style="margin-bottom:12px"></div>
+
+  <div class="g2">
+    <div class="fi">
+      <label>Área *</label>
+      <select id="cit-area-main">
+        <option value="MED">Médico</option>
+        <option value="ENF">Enfermería</option>
+        <option value="NUT">Nutrición</option>
+      </select>
+    </div>
+    <div class="fi">
+      <label>Urgencia</label>
+      <select id="cit-urg-main">
+        <option>Normal</option>
+        <option>Prioritario</option>
+        <option>Urgente</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="fi">
+      <label>Fecha *</label>
+      <input type="date" id="cit-fecha-main">
+    </div>
+    <div class="fi">
+      <label>Hora *</label>
+      <input type="time" id="cit-hora-main" value="08:00">
+    </div>
+  </div>
+
+  <div class="fi">
+    <label>Motivo *</label>
+    <input type="text" id="cit-motivo-main" placeholder="Motivo de la cita...">
+  </div>
+
+  <div class="fi">
+    <label>Notas</label>
+    <textarea id="cit-notas-main" rows="2"></textarea>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-bl" onclick="guardarCitaMain()">💾 Guardar cita</button>
+    <button class="btn btn-gh" onclick="limpiarCitaMain()">🔄 Limpiar</button>
+  </div>
+</div>
   <div id="citas-lista"></div>
 </div>
 
@@ -2328,6 +2393,9 @@ function sugFechaCita(){
   sug.textContent='Próximo '+dia+': '+next.toLocaleDateString('es-MX',{day:'numeric',month:'long'});
 }
 function renderCitas(){
+   const f = document.getElementById('cit-fecha-main');
+  if(f && !f.value){
+    f.value = new Date().toISOString().split('T')[0];}
   const fa=(document.getElementById('cit-fa')||{}).value||'';
   const fp=(document.getElementById('cit-fp')||{}).value||'';
   const fe=(document.getElementById('cit-fe')||{}).value||'';
@@ -2366,6 +2434,163 @@ async function guardarCita(){
   CITAS.push(cita);sv(SK.citas,CITAS);renderCitas();
   setSyncDot('busy');const r=await gasPost({action:'saveCita',val:cita});setSyncDot(r.ok?'ok':'err');
   toast(r.ok?'✅ Cita guardada':'⚠️ Guardada local','ok');closeModal('mo-cita');
+}
+  function buscarCitaMain(q){
+  const drop = document.getElementById('cit-drop-main');
+  if(!drop) return;
+
+  q = String(q || '').trim();
+  if(q.length < 2){
+    drop.classList.remove('show');
+    drop.innerHTML = '';
+    return;
+  }
+
+  const nq = norm(q);
+  const lista = (HC || [])
+    .filter(e =>
+      String(e.noEmp || '').includes(q) ||
+      norm(e.nombre || '').includes(nq)
+    )
+    .slice(0, 8);
+
+  if(!lista.length){
+    drop.innerHTML = `<div class="si-item"><div class="si-name">Sin resultados</div></div>`;
+    drop.classList.add('show');
+    return;
+  }
+
+  drop.innerHTML = lista.map(e => `
+    <div class="si-item" onclick="seleccionarCitaMain('${esc(e.noEmp || '')}')">
+      <div class="si-name">${e.nombre || '—'}</div>
+      <div class="si-meta">
+        No. ${e.noEmp || '—'} · ${e.planta || '—'} · ${e.depto || '—'} · ${e.turno || '—'}
+      </div>
+    </div>
+  `).join('');
+
+  drop.classList.add('show');
+}
+
+function seleccionarCitaMain(noEmp){
+  const emp = (HC || []).find(e => String(e.noEmp) === String(noEmp));
+  if(!emp) return;
+
+  const q = document.getElementById('cit-q-main');
+  const hidden = document.getElementById('cit-es-main');
+  const drop = document.getElementById('cit-drop-main');
+  const card = document.getElementById('cit-ec-main');
+
+  if(q) q.value = `${emp.noEmp || ''} - ${emp.nombre || ''}`;
+  if(hidden) hidden.value = emp.noEmp || '';
+  if(drop){
+    drop.innerHTML = '';
+    drop.classList.remove('show');
+  }
+
+  if(card){
+    card.innerHTML = `
+      <div class="ec">
+        <div class="ec-name">
+          ${emp.nombre || '—'}
+          <span class="ec-tag">No. ${emp.noEmp || '—'}</span>
+        </div>
+        <div class="ec-grid">
+          <div class="ec-f"><label>Planta</label><span>${emp.planta || '—'}</span></div>
+          <div class="ec-f"><label>Depto</label><span>${emp.depto || '—'}</span></div>
+          <div class="ec-f"><label>Turno</label><span>${emp.turno || '—'}</span></div>
+          <div class="ec-f"><label>NSS</label><span>${emp.nss || '—'}</span></div>
+          <div class="ec-f"><label>Teléfono</label><span>${emp.telefono || '—'}</span></div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function guardarCitaMain(){
+  const noEmp = g('cit-es-main');
+  if(!noEmp){
+    toast('Selecciona un empleado','err');
+    return;
+  }
+
+  const fecha = g('cit-fecha-main');
+  const hora = g('cit-hora-main');
+  const motivo = g('cit-motivo-main');
+
+  if(!fecha || !hora || !motivo){
+    toast('Fecha, hora y motivo son obligatorios','err');
+    return;
+  }
+
+  const emp = (HC || []).find(x => String(x.noEmp) === String(noEmp)) || {};
+
+  const cita = {
+    id: Date.now(),
+    fecha: new Date(fecha + 'T12:00').toLocaleDateString('es-MX'),
+    hora,
+    noEmp,
+    nombre: emp.nombre || '',
+    planta: emp.planta || '',
+    turno: emp.turno || '',
+    area: g('cit-area-main'),
+    motivo,
+    urgencia: g('cit-urg-main') || 'Normal',
+    telefono: emp.telefono || '',
+    notas: g('cit-notas-main'),
+    estado: 'Pendiente',
+    creadoPor: USER?.nombre || ''
+  };
+
+  CITAS.push(cita);
+  sv(SK.citas, CITAS);
+  renderCitas();
+
+  setSyncDot('busy');
+  const r = await gasPost({ action:'saveCita', val:cita });
+  setSyncDot(r.ok ? 'ok' : 'err');
+
+  toast(r.ok ? '✅ Cita guardada' : '⚠️ Guardada local', 'ok');
+  limpiarCitaMain();
+}
+
+function limpiarCitaMain(){
+  const ids = [
+    'cit-q-main',
+    'cit-es-main',
+    'cit-fecha-main',
+    'cit-hora-main',
+    'cit-motivo-main',
+    'cit-notas-main'
+  ];
+
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+
+  const hora = document.getElementById('cit-hora-main');
+  if(hora) hora.value = '08:00';
+
+  const ec = document.getElementById('cit-ec-main');
+  if(ec) ec.innerHTML = '';
+
+  const drop = document.getElementById('cit-drop-main');
+  if(drop){
+    drop.innerHTML = '';
+    drop.classList.remove('show');
+  }
+
+  const fecha = document.getElementById('cit-fecha-main');
+  if(fecha) fecha.value = new Date().toISOString().split('T')[0];
+}
+
+async function cambiarEstadoCita(id){
+  const r=CITAS.find(x=>String(x.id||x.ID)===String(id));if(!r)return;
+  const opts=['Pendiente','Confirmada','Completada','Cancelada'];
+  r.estado=opts[(opts.indexOf(r.estado||'Pendiente')+1)%opts.length];
+  sv(SK.citas,CITAS);renderCitas();
+  await gasPost({action:'updateCita',id,estado:r.estado});
 }
 async function cambiarEstadoCita(id){
   const r=CITAS.find(x=>String(x.id||x.ID)===String(id));if(!r)return;
