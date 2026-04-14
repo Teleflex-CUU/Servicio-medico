@@ -255,46 +255,143 @@ function abrirVentanaImpresion(titulo,contenido){
 }
 
 function getNota(r){
-  if(!r)return'';
-  const emp=_empActual||{};
-  const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
-  const tipoLabel=r.tipoAtencion==='ENF'?'Nota de Enfermería':'Valoración Médica';
-  const reg=r.registradoPor||'Dr. Jaime Iván Martínez Espinoza';
-  const ced=r.tipoAtencion==='MED'?'12021447':'';
-  return`${getLogoHeader(reg,ced)}
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div style="font-size:16px;font-weight:800;color:#0F2942">${tipoLabel}</div>
-    <div style="font-family:monospace;font-size:11px;background:#F1F5F9;padding:3px 10px;border-radius:5px">${r.folio||''}</div>
-  </div>
-  <div class="pac g2">
-    <div class="f"><label>Paciente</label><span>${r.nombre||emp.nombre||'—'}</span></div>
-    <div class="f"><label>No. Empleado</label><span>${r.noEmp||emp.noEmp||'—'}</span></div>
-    <div class="f"><label>NSS</label><span>${r.nss||emp.nss||'—'}</span></div>
-    <div class="f"><label>Planta</label><span>${r.planta||emp.planta||'—'}</span></div>
-    <div class="f"><label>Departamento</label><span>${r.depto||emp.depto||'—'}</span></div>
-    <div class="f"><label>Fecha</label><span>${r.fecha||fecha}${r.hora?' · '+r.hora:''}</span></div>
-  </div>
-  ${r.ta||r.fc||r.temp?`<div class="sec"><div class="sec-t">Signos vitales</div><div class="g4">
-    ${r.ta?`<div class="f"><label>T/A</label><span>${r.ta}</span></div>`:''}
-    ${r.fc?`<div class="f"><label>FC</label><span>${r.fc} lpm</span></div>`:''}
-    ${r.temp?`<div class="f"><label>Temp</label><span>${r.temp}°C</span></div>`:''}
-    ${r.spo2?`<div class="f"><label>SpO₂</label><span>${r.spo2}%</span></div>`:''}
-    ${r.glucosa?`<div class="f"><label>Glucosa</label><span>${r.glucosa} mg/dL</span></div>`:''}
-  </div></div>`:''}
-  ${r.motivoConsulta?`<div class="sec"><div class="sec-t">Motivo</div><p>${r.motivoConsulta}</p></div>`:''}
-  <div class="sec"><div class="sec-t">Diagnóstico</div>
-    ${r.cie10?`<span style="background:#CCFBF1;color:#0D9488;padding:2px 8px;border-radius:4px;font-family:monospace;font-weight:700;margin-right:6px">${r.cie10}</span>`:''}
-    <strong>${r.diagnostico||'—'}</strong>
-  </div>
-  ${r.exploracion?`<div class="sec"><div class="sec-t">Exploración física</div><p style="line-height:1.7">${r.exploracion}</p></div>`:''}
-  ${r.plan?`<div class="sec"><div class="sec-t">Plan y tratamiento</div><p style="line-height:1.7">${r.plan}</p></div>`:''}
-  ${r.incapacidad&&r.incapacidad!=='No'?`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:10px;margin-bottom:12px">
-    <strong>Incapacidad:</strong> ${r.incapacidad} · ${r.incDias||'—'} días (${r.incInicio||'—'} al ${r.incFin||'—'})
-  </div>`:''}
-  <div class="sig-area">
-    <div class="sig-box"><div class="sig-line">${reg}${ced?'<br><small>Cédula '+ced+'</small>':''}</div></div>
-    <div class="sig-box"><div class="sig-line">Firma del trabajador<br>${r.nombre||emp.nombre||'—'}</div></div>
-  </div>`;
+  if(!r) return '';
+
+  const emp = _empActual || {};
+  const tipoLabel = r.tipoAtencion === 'ENF' ? 'NOTA DE ENFERMERÍA' : 'NOTA DE VALORACIÓN MÉDICA';
+  const reg = r.registradoPor || 'Dr. Jaime Iván Martínez Espinoza';
+  const ced = r.tipoAtencion === 'MED' ? '12021447' : '';
+
+  const nombre = r.nombre || emp.nombre || '—';
+  const noEmp = r.noEmp || emp.noEmp || '—';
+  const nss = r.nss || emp.nss || '—';
+  const planta = r.planta || emp.planta || '—';
+  const depto = r.depto || emp.depto || '—';
+  const puesto = r.puesto || emp.puesto || '—';
+  const fecha = r.fecha || '—';
+  const hora = r.hora || '—';
+
+  const seguimiento = r.seguimiento || '—';
+  const proxCita = r.proxCita || r.fProxCita || r.proximaCita || 'No programada';
+
+  return `
+    ${getLogoHeader(reg, ced)}
+
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:18px;font-weight:800;color:#0F2942;letter-spacing:.4px">${tipoLabel}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:3px">
+        Folio clínico:
+        <span style="font-family:monospace;font-weight:700;color:#0F2942">${r.folio || '—'}</span>
+      </div>
+    </div>
+
+    <div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div class="sec-t" style="margin-bottom:10px">Datos del paciente</div>
+      <div class="g2">
+        <div class="f"><label>Nombre</label><span>${nombre}</span></div>
+        <div class="f"><label>No. Empleado</label><span>${noEmp}</span></div>
+        <div class="f"><label>NSS</label><span>${nss}</span></div>
+        <div class="f"><label>Fecha y hora</label><span>${fecha} · ${hora}</span></div>
+        <div class="f"><label>Planta</label><span>${planta}</span></div>
+        <div class="f"><label>Departamento</label><span>${depto}</span></div>
+        <div class="f"><label>Puesto</label><span>${puesto}</span></div>
+        <div class="f"><label>Tipo de atención</label><span>${r.tipoCons || r.tipoAtencion || '—'}</span></div>
+      </div>
+    </div>
+
+    ${(r.ta || r.fc || r.fr || r.temp || r.spo2 || r.glucosa || r.peso || r.talla || r.imc) ? `
+      <div class="sec">
+        <div class="sec-t">Signos vitales y somatometría</div>
+        <div class="g4">
+          ${r.ta ? `<div class="f"><label>Tensión arterial</label><span>${r.ta}</span></div>` : ''}
+          ${r.fc ? `<div class="f"><label>Frecuencia cardiaca</label><span>${r.fc} lpm</span></div>` : ''}
+          ${r.fr ? `<div class="f"><label>Frecuencia respiratoria</label><span>${r.fr} rpm</span></div>` : ''}
+          ${r.temp ? `<div class="f"><label>Temperatura</label><span>${r.temp} °C</span></div>` : ''}
+          ${r.spo2 ? `<div class="f"><label>SpO₂</label><span>${r.spo2} %</span></div>` : ''}
+          ${r.glucosa ? `<div class="f"><label>Glucosa</label><span>${r.glucosa} mg/dL</span></div>` : ''}
+          ${r.peso ? `<div class="f"><label>Peso</label><span>${r.peso} kg</span></div>` : ''}
+          ${r.talla ? `<div class="f"><label>Talla</label><span>${r.talla} m</span></div>` : ''}
+          ${r.imc ? `<div class="f"><label>IMC</label><span>${r.imc}</span></div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+
+    ${r.alergias || r.cronicos ? `
+      <div class="sec">
+        <div class="sec-t">Antecedentes clínicos relevantes</div>
+        <div class="g2">
+          <div class="f"><label>Alergias</label><span>${r.alergias || 'Negadas'}</span></div>
+          <div class="f"><label>Enfermedades crónicas / comorbilidades</label><span>${r.cronicos || r.comorbilidades || 'Negadas'}</span></div>
+        </div>
+      </div>
+    ` : ''}
+
+    ${r.motivoConsulta ? `
+      <div class="sec">
+        <div class="sec-t">Motivo de consulta</div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;line-height:1.7;background:#fff">
+          ${r.motivoConsulta}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="sec">
+      <div class="sec-t">Impresión diagnóstica</div>
+      <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;line-height:1.7">
+        ${r.cie10 ? `<div style="margin-bottom:6px"><span style="background:#DBEAFE;color:#1D4ED8;padding:3px 8px;border-radius:4px;font-family:monospace;font-weight:700">${r.cie10}</span></div>` : ''}
+        <strong>${r.diagnostico || '—'}</strong>
+      </div>
+    </div>
+
+    ${r.exploracion ? `
+      <div class="sec">
+        <div class="sec-t">Exploración física</div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;line-height:1.7;white-space:pre-wrap">${r.exploracion}</div>
+      </div>
+    ` : ''}
+
+    ${r.plan ? `
+      <div class="sec">
+        <div class="sec-t">Plan terapéutico e indicaciones</div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;line-height:1.7;white-space:pre-wrap">${r.plan}</div>
+      </div>
+    ` : ''}
+
+    <div class="sec">
+      <div class="sec-t">Seguimiento</div>
+      <div class="g2">
+        <div class="f"><label>Conducta / estatus</label><span>${seguimiento}</span></div>
+        <div class="f"><label>Próxima cita</label><span>${proxCita}</span></div>
+      </div>
+
+      ${String(seguimiento).toLowerCase() === 'alta' ? `
+        <div style="margin-top:10px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:8px;padding:10px 12px;color:#166534;font-weight:700">
+          Alta médica otorgada.
+        </div>
+      ` : ''}
+    </div>
+
+    ${r.incapacidad && r.incapacidad !== 'No' ? `
+      <div class="sec">
+        <div class="sec-t">Incapacidad</div>
+        <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:10px 12px;line-height:1.7">
+          <strong>Tipo:</strong> ${r.incapacidad}<br>
+          <strong>Periodo:</strong> ${r.incInicio || '—'} al ${r.incFin || '—'}<br>
+          <strong>Días autorizados:</strong> ${r.incDias || '—'}
+        </div>
+      </div>
+    ` : ''}
+
+    <div style="margin-top:28px;display:flex;justify-content:flex-end">
+      <div style="text-align:center;min-width:260px">
+        <div style="border-top:1.5px solid #0F2942;padding-top:8px;font-size:11px;font-weight:700;color:#0F2942;line-height:1.6">
+          ${reg}<br>
+          ${ced ? `<span style="font-weight:600;color:#64748B">Cédula profesional ${ced}</span><br>` : ''}
+          <span style="font-weight:600;color:#64748B">Firma del médico tratante</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function imprimirNotaMed(){
@@ -2096,57 +2193,57 @@ async function guardarConsulta(tipo){
   }
 
   const cons = {
-    folio,
-    tipoAtencion: tipo,
-    tipoCons: g('f-tipo'),
-    fecha: ahora.toLocaleDateString('es-MX'),
-    hora: ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
-    mes: MESES[ahora.getMonth()],
-    mesNum: ahora.getMonth() + 1,
-    anio: ahora.getFullYear(),
-    semana: getWeek(ahora),
-    noEmp: emp.noEmp,
-    nombre: emp.nombre,
-    planta: emp.planta,
-    turno: emp.turno || USER.turno,
-    depto: emp.depto,
-    puesto: emp.puesto,
-    nss: emp.nss,
-    genero: emp.genero,
-    cie10: g('f-cv'),
-    diagnostico: diag,
-    alergias: g('f-al') || '',
-    cronicos: g('f-cr') || '',
-    ta: g('f-ta'),
-    fc: g('f-fc'),
-    fr: g('f-fr'),
-    temp: g('f-temp'),
-    peso: g('f-peso'),
-    talla: g('f-talla'),
-    spo2: g('f-spo2'),
-    glucosa: g('f-gluc'),
-    imc: g('f-imc') || '',
-    motivoConsulta: g('f-motivo') || '',
-    plan: g('f-plan'),
-    seguimiento: g('f-seg') || '',
-    incapacidad: g('f-incap') || 'No',
-    incInicio: g('f-ii'),
-    incFin: g('f-if'),
-    incDias: g('f-ds'),
-    objetivo: '',
-    kcal: '',
-    proteinas: '',
-    carbos: '',
-    grasas: '',
-    imcCategoria: g('f-imc') || '',
-    pesoMeta: '',
-    comorbilidades: g('f-cr') || '',
-    recomendaciones: '',
-    menu: '',
-    proxCita: '',
-    registradoPor: USER.nombre,
-    aps: JSON.stringify(aps)
-  };
+  folio,
+  tipoAtencion: tipo,
+  tipoCons: g('f-tipo'),
+  fecha: ahora.toLocaleDateString('es-MX'),
+  hora: ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+  mes: MESES[ahora.getMonth()],
+  mesNum: ahora.getMonth()+1,
+  anio: ahora.getFullYear(),
+  semana: getWeek(ahora),
+  noEmp: emp.noEmp,
+  nombre: emp.nombre,
+  planta: emp.planta,
+  turno: emp.turno || USER.turno,
+  depto: emp.depto,
+  puesto: emp.puesto,
+  nss: emp.nss,
+  genero: emp.genero,
+  cie10: g('f-cv'),
+  diagnostico: diag,
+  alergias: g('f-al') || '',
+  cronicos: g('f-cr') || '',
+  ta: g('f-ta'),
+  fc: g('f-fc'),
+  fr: g('f-fr'),
+  temp: g('f-temp'),
+  peso: g('f-peso'),
+  talla: g('f-talla'),
+  spo2: g('f-spo2'),
+  glucosa: g('f-gluc'),
+  imc: g('f-imc') || '',
+  motivoConsulta: g('f-motivo') || '',
+  plan: g('f-plan'),
+  seguimiento: g('f-seg') || '',
+  proxCita: g('f-prox') || '',
+  incapacidad: g('f-incap') || 'No',
+  incInicio: g('f-ii'),
+  incFin: g('f-if'),
+  incDias: g('f-ds'),
+  objetivo: '',
+  kcal: '',
+  proteinas: '',
+  carbos: '',
+  grasas: '',
+  imcCategoria: g('f-imc') || '',
+  pesoMeta: '',
+  comorbilidades: g('f-cr') || '',
+  recomendaciones: '',
+  menu: '',
+  registradoPor: USER.nombre,
+  aps: JSON.stringify(aps)
+};
 
   CONS.push(cons);
   sv(SK.cons, CONS);
