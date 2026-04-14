@@ -2689,6 +2689,122 @@ function imprimirComprobanteCita(id){
 
   abrirVentanaImpresion('Comprobante de cita', contenido);
 }
+  window.cambiarEstadoCita = async function(id){
+  const r = (CITAS || []).find(x => String(x.id || x.ID) === String(id));
+  if(!r){
+    toast('Cita no encontrada','err');
+    return;
+  }
+
+  const opts = ['Pendiente','Confirmada','Completada','Cancelada'];
+  const actual = r.estado || 'Pendiente';
+  const idx = opts.indexOf(actual);
+  r.estado = opts[(idx + 1) % opts.length];
+
+  sv(SK.citas, CITAS);
+  renderCitas();
+
+  try{
+    await gasPost({
+      action: 'updateCita',
+      id,
+      estado: r.estado
+    });
+  }catch(e){}
+};
+
+window.abrirConsultaDesdeCita = function(id){
+  const cita = (CITAS || []).find(x => String(x.id || x.ID) === String(id));
+  if(!cita){
+    toast('Cita no encontrada','err');
+    return;
+  }
+
+  const emp = (HC || []).find(x => String(x.noEmp) === String(cita.noEmp));
+  if(!emp){
+    toast('Empleado no encontrado en HC','err');
+    return;
+  }
+
+  window._citaActual = cita;
+  _empActual = emp;
+  _capEmp = emp;
+
+  go('captura');
+
+  const ch = document.getElementById('cap-emp-header');
+  if(ch){
+    ch.innerHTML = `
+      <div class="ec">
+        <div class="ec-name">
+          ${emp.nombre || '—'}
+          <span class="ec-tag">No. ${emp.noEmp || '—'}</span>
+        </div>
+        <div class="ec-grid">
+          <div class="ec-f"><label>Planta</label><span>${emp.planta || '—'}</span></div>
+          <div class="ec-f"><label>Depto</label><span>${emp.depto || '—'}</span></div>
+          <div class="ec-f"><label>Turno</label><span>${emp.turno || '—'}</span></div>
+          <div class="ec-f"><label>NSS</label><span>${emp.nss || '—'}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const titulo = document.getElementById('cap-titulo');
+  if(titulo) titulo.textContent = 'Consulta médica desde cita';
+
+  const sub = document.getElementById('cap-sub');
+  if(sub) sub.textContent = `Cita: ${cita.fecha || '—'} ${cita.hora || ''} · ${cita.motivo || ''}`;
+
+  const alertas = document.getElementById('cap-alertas');
+  if(alertas){
+    alertas.innerHTML = `
+      <div class="alert alert-bl" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8">
+        📅 Cita abierta: ${cita.fecha || '—'} ${cita.hora || ''} · Motivo: ${cita.motivo || '—'}
+      </div>
+    `;
+  }
+
+  const form = document.getElementById('cap-form-container');
+  if(form){
+    form.innerHTML = buildCapFormMed(emp);
+  }
+
+  const motivo = document.getElementById('f-motivo');
+  if(motivo && !motivo.value){
+    motivo.value = cita.motivo || '';
+  }
+};
+
+window.imprimirComprobanteCita = function(id){
+  const r = (CITAS || []).find(x => String(x.id || x.ID) === String(id));
+  if(!r){
+    toast('Cita no encontrada','err');
+    return;
+  }
+
+  const contenido = `
+    ${typeof getLogoHeader === 'function' ? getLogoHeader() : ''}
+    <div style="font-size:16px;font-weight:800;color:#0F2942;margin-bottom:12px;text-align:center">
+      COMPROBANTE DE CITA
+    </div>
+
+    <div class="pac g2">
+      <div class="f"><label>Paciente</label><span>${r.nombre || '—'}</span></div>
+      <div class="f"><label>No. Empleado</label><span>${r.noEmp || '—'}</span></div>
+      <div class="f"><label>Área</label><span>${r.area || '—'}</span></div>
+      <div class="f"><label>Estado</label><span>${r.estado || 'Pendiente'}</span></div>
+      <div class="f"><label>Fecha</label><span>${r.fecha || '—'}</span></div>
+      <div class="f"><label>Hora</label><span>${r.hora || '—'}</span></div>
+      <div class="f"><label>Planta</label><span>${r.planta || '—'}</span></div>
+      <div class="f"><label>Turno</label><span>${r.turno || '—'}</span></div>
+      <div class="f"><label>Motivo</label><span>${r.motivo || '—'}</span></div>
+      <div class="f"><label>Notas</label><span>${r.notas || '—'}</span></div>
+    </div>
+  `;
+
+  abrirVentanaImpresion('Comprobante de cita', contenido);
+};
 
 // ════════════════════════════════════════════════════════════════
 // DASHBOARD
