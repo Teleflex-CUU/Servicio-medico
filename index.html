@@ -2618,6 +2618,11 @@ function renderCitas(){
             </div>
             <div style="font-size:12px;color:var(--tx2)">
               ${r.motivo || '—'}
+              ${r.folioConsulta ? `
+  <div style="font-size:11px;color:var(--gr);font-weight:700;margin-top:4px">
+    ✅ Nota médica: ${r.folioConsulta}
+  </div>
+` : ''}
             </div>
             ${
               r.notas
@@ -2626,41 +2631,29 @@ function renderCitas(){
             }
           </div>
 
-          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            <span class="pill ${ec}">${estado}</span>
+<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+  <span class="pill ${pillClass}">${estado}</span>
 
-            <button class="btn btn-gh btn-xs" onclick="cambiarEstadoCita('${r.id || r.ID}')">
-              ↺ Estado
-            </button>
+  <button class="btn btn-gh btn-xs" onclick="cambiarEstadoCita('${r.id || r.ID}')">
+    ↺ Estado
+  </button>
 
-            ${
-              (r.area || '') === 'MED'
-                ? `
-                  <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id || r.ID}')">
-                    🩺 Abrir consulta
-                  </button>
-                `
-                : ''
-            }
+  ${(r.area || '') === 'MED' ? `
+    <button class="btn btn-bl btn-xs" onclick="abrirConsultaDesdeCita('${r.id || r.ID}')">
+      🩺 Abrir consulta
+    </button>
+  ` : ''}
 
-            ${
-              r.folioConsulta
-                ? `
-                  <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">
-                    📄 Nota
-                  </button>
-                `
-                : ''
-            }
+  ${(r.area || '') === 'MED' && r.folioConsulta ? `
+    <button class="btn btn-gh btn-xs" onclick="imprimirNotaMedFolio('${r.folioConsulta}')">
+      📄 Nota
+    </button>
+  ` : ''}
 
-            <button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id || r.ID}')">
-              🖨️ Imprimir
-            </button>
-          </div>
-
-        </div>
-      </div>
-    `;
+  <button class="btn btn-gh btn-xs" onclick="imprimirComprobanteCita('${r.id || r.ID}')">
+    🖨️ Imprimir
+  </button>
+</div>
   }).join('');
 }
 async function guardarCita(){
