@@ -3746,14 +3746,50 @@ async function guardarPastilleo(){
     toast('⚠️ Guardado local','ok');
   }
 
-  document.getElementById('past-motivo').value = '';
-  document.getElementById('past-tx').value = '';
+  // 👇 En lugar de dejar los datos del trabajador anterior, limpiamos todo
+  if(typeof limpiarPastilleo === 'function'){
+    limpiarPastilleo();
+  }else{
+    _pastEmp = null;
 
-  // Mantener visibles alergias y crónicos para no volver a capturarlos
-  const al = document.getElementById('past-alergias');
-  const cr = document.getElementById('past-cronicos');
-  if(al) al.value = alergias;
-  if(cr) cr.value = cronicos;
+    const q = document.getElementById('past-q');
+    if(q) q.value = '';
+
+    const form = document.getElementById('past-form');
+    if(form) form.style.display = 'none';
+
+    const nombre = document.getElementById('past-emp-nombre');
+    if(nombre) nombre.textContent = '';
+
+    const meta = document.getElementById('past-emp-meta');
+    if(meta) meta.textContent = '';
+
+    const motivoEl = document.getElementById('past-motivo');
+    if(motivoEl) motivoEl.value = '';
+
+    const txEl = document.getElementById('past-tx');
+    if(txEl) txEl.value = '';
+
+    const al = document.getElementById('past-alergias');
+    if(al) al.value = '';
+
+    const cr = document.getElementById('past-cronicos');
+    if(cr) cr.value = '';
+
+    const alertas = document.getElementById('past-alertas');
+    if(alertas) alertas.innerHTML = '';
+
+    const drop = document.getElementById('past-drop');
+    if(drop){
+      drop.innerHTML = '';
+      drop.classList.remove('show');
+    }
+
+    setTimeout(() => {
+      const q2 = document.getElementById('past-q');
+      if(q2) q2.focus();
+    }, 100);
+  }
 }
 
 function renderPastList(){
