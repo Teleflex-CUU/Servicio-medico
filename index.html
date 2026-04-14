@@ -2526,7 +2526,69 @@ function sugFechaCita(){
   sv2('cit-fecha',next.toISOString().split('T')[0]);
   sug.textContent='Próximo '+dia+': '+next.toLocaleDateString('es-MX',{day:'numeric',month:'long'});
 }
-function renderCitas(){
+function formatearFechaBonita(valor){
+  if(!valor) return '—';
+
+  try{
+    const txt = String(valor).trim();
+
+    // Si ya viene como dd/mm/yyyy, lo dejamos
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(txt)) return txt;
+
+    // Si viene como yyyy-mm-dd
+    if(/^\d{4}-\d{2}-\d{2}$/.test(txt)){
+      const [y,m,d] = txt.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    // Si viene tipo ISO
+    const fecha = new Date(txt);
+    if(!isNaN(fecha.getTime())){
+      return fecha.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    return txt;
+  }catch(e){
+    return String(valor);
+  }
+}
+
+function formatearHoraBonita(valor){
+  if(!valor) return '—';
+
+  try{
+    const txt = String(valor).trim();
+
+    // Si ya viene hh:mm
+    if(/^\d{2}:\d{2}$/.test(txt)){
+      const [h,m] = txt.split(':');
+      const d = new Date();
+      d.setHours(parseInt(h,10), parseInt(m,10), 0, 0);
+      return d.toLocaleTimeString('es-MX', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // Si viene ISO o fecha rara
+    const hora = new Date(txt);
+    if(!isNaN(hora.getTime())){
+      return hora.toLocaleTimeString('es-MX', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    return txt;
+  }catch(e){
+    return String(valor);
+  }
+}
+  function renderCitas(){
   const hoy = new Date().toISOString().split('T')[0];
 
   const fMain = document.getElementById('cit-fecha-main');
@@ -2611,8 +2673,7 @@ function renderCitas(){
               No. ${r.noEmp || '—'} · ${r.planta || '—'} · ${r.area || '—'}
             </div>
             <div style="font-size:13px;font-weight:600;color:var(--nv);margin-top:2px">
-              ${r.fecha || '—'} · ${r.hora || '—'}
-            </div>
+            ${formatearFechaBonita(r.fecha)} · ${formatearHoraBonita(r.hora)}            </div>
             <div style="font-size:12px;color:var(--tx2)">
               ${r.motivo || '—'}
             </div>
@@ -2753,17 +2814,20 @@ window.abrirConsultaDesdeCita = function(id){
   const titulo = document.getElementById('cap-titulo');
   if(titulo) titulo.textContent = 'Consulta médica desde cita';
 
-  const sub = document.getElementById('cap-sub');
-  if(sub) sub.textContent = `Cita: ${cita.fecha || '—'} ${cita.hora || ''} · ${cita.motivo || ''}`;
+ const fechaBonita = formatearFechaBonita(cita.fecha);
+const horaBonita = formatearHoraBonita(cita.hora);
 
-  const alertas = document.getElementById('cap-alertas');
-  if(alertas){
-    alertas.innerHTML = `
-      <div class="alert alert-bl" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8">
-        📅 Cita abierta: ${cita.fecha || '—'} ${cita.hora || ''} · Motivo: ${cita.motivo || '—'}
-      </div>
-    `;
-  }
+const sub = document.getElementById('cap-sub');
+if(sub) sub.textContent = `Cita: ${fechaBonita} · ${horaBonita} · ${cita.motivo || ''}`;
+
+const alertas = document.getElementById('cap-alertas');
+if(alertas){
+  alertas.innerHTML = `
+    <div class="alert alert-bl" style="background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8">
+      📅 Cita abierta: ${fechaBonita} · ${horaBonita} · Motivo: ${cita.motivo || '—'}
+    </div>
+  `;
+}
 
   const form = document.getElementById('cap-form-container');
   if(form){
