@@ -3472,8 +3472,8 @@ function cargarDatosClinicosPastilleo(emp){
   if(alertas) alertas.innerHTML = '';
   if(!al || !cr || !emp) return;
 
-  al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
-  cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
+  al.value = getAlergias(emp.noEmp) || '';
+  cr.value = getCronicos(emp.noEmp) || '';
 
   renderAlertaFrecuenciaPastilleo(emp);
 }
@@ -3566,27 +3566,43 @@ function limpiarPastilleo(){
 }
 
 async function guardarPastilleo(){
-  if(!_pastEmp){toast('Selecciona un trabajador primero','err');return;}
-  const motivo = (document.getElementById('past-motivo')?.value||'').trim();
-  const tx = (document.getElementById('past-tx')?.value||'').trim();
-  if(!motivo){toast('Escribe el motivo / síntoma','err');document.getElementById('past-motivo')?.focus();return;}
-  if(!tx){toast('Escribe el medicamento entregado','err');document.getElementById('past-tx')?.focus();return;}
+  if(!_pastEmp){
+    toast('Selecciona un trabajador primero','err');
+    return;
+  }
+
+  const motivo = (document.getElementById('past-motivo')?.value || '').trim();
+  const tx = (document.getElementById('past-tx')?.value || '').trim();
+  const alergias = (document.getElementById('past-alergias')?.value || '').trim();
+  const cronicos = (document.getElementById('past-cronicos')?.value || '').trim();
+
+  if(!motivo){
+    toast('Escribe el motivo / síntoma','err');
+    document.getElementById('past-motivo')?.focus();
+    return;
+  }
+
+  if(!tx){
+    toast('Escribe el medicamento entregado','err');
+    document.getElementById('past-tx')?.focus();
+    return;
+  }
 
   const ahora = new Date();
-  const fechaInput = document.getElementById('past-fecha')?.value;
-  const turno = document.getElementById('past-turno')?.value||USER.turno||'Matutino';
-  const folio = 'ENF-'+Date.now().toString().slice(-6);
+  const turno = document.getElementById('past-turno')?.value || USER.turno || 'Matutino';
+  const folio = 'ENF-' + Date.now().toString().slice(-6);
 
   const cons = {
     folio,
-    tipoAtencion:'ENF',
-    tipoCons:'Pastilleo',
+    tipoAtencion: 'ENF',
+    tipoCons: 'Pastilleo',
     fecha: ahora.toLocaleDateString('es-MX'),
-    hora: ahora.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+    hora: ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }),
     mes: MESES[ahora.getMonth()],
-    mesNum: ahora.getMonth()+1,
+    mesNum: ahora.getMonth() + 1,
     anio: ahora.getFullYear(),
     semana: getWeek(ahora),
+
     noEmp: _pastEmp.noEmp,
     nombre: _pastEmp.nombre,
     planta: _pastEmp.planta,
@@ -3595,33 +3611,65 @@ async function guardarPastilleo(){
     puesto: _pastEmp.puesto,
     nss: _pastEmp.nss,
     genero: _pastEmp.genero,
+
     diagnostico: motivo,
-    plan: tx,
     motivoConsulta: motivo,
+    plan: tx,
     seguimiento: 'Alta',
     incapacidad: 'No',
+
+    alergias: alergias,
+    cronicos: cronicos,
+
     registradoPor: USER.nombre
   };
 
-  // Save locally
   CONS.push(cons);
   sv(SK.cons, CONS);
 
-  // Save to GAS
-  toast('Guardando...','ok');
-  const r = await gasPost({action:'saveConsulta',...cons});
-  if(r.ok){
-    toast('✅ Pastilleo registrado — '+_pastEmp.nombre,'ok');
-  } else {
-    toast('Guardado local — sin conexión','ok');
-    
+  if(_expData){
+    if(!_expData.consultas) _expData.consultas = [];
+    _expData.consultas.unshift(cons);
+
+    if(!_expData.resumen){
+      _expData.resumen = { alergias: [], cronicos: [] };
+    }
+
+    if(alergias){
+      alergias.split(/[,;]+/).forEach(a => {
+        a = a.trim();
+        if(a && !_expData.resumen.alergias.map(x => x.toLowerCase()).includes(a.toLowerCase())){
+          _expData.resumen.alergias.push(a);
+        }
+      });
+    }
+
+    if(cronicos){
+      cronicos.split(/[,;]+/).forEach(c => {
+        c = c.trim();
+        if(c && !_expData.resumen.cronicos.map(x => x.toLowerCase()).includes(c.toLowerCase())){
+          _expData.resumen.cronicos.push(c);
+        }
+      });
+    }
   }
 
-  // Update today list
-  renderPastilleoHoy();
+  renderPastList();
 
-  // Clear for next patient
-  limpiarPastilleo();
+  toast('⏳ Guardando pastilleo...','inf');
+  setSyncDot('busy');
+
+  try{
+    const r = await gasPost({ action:'saveConsulta', val:cons });
+    setSyncDot(r.ok ? 'ok' : 'err');
+    toast(r.ok ? '✅ Pastilleo guardado' : '⚠️ Guardado local','ok');
+  }catch(e){
+    setSyncDot('err');
+    toast('⚠️ Guardado local','ok');
+  }
+
+  document.getElementById('past-motivo').value = '';
+  document.getElementById('past-tx').value = '';
 }
 
 function renderPastilleoHoy(){
