@@ -1816,6 +1816,8 @@ initDashSelects();
   CONS=ld(SK.cons)||[];
   INC=ld(SK.inc)||[];
   CITAS=ld(SK.citas)||[];
+  
+  renderPastList();
 
   // Dejar lista la pantalla inicial de consulta
   const ch=document.getElementById('cap-emp-header');if(ch&&!ch.innerHTML.trim())ch.innerHTML=buildCapBuscador();
@@ -3564,7 +3566,81 @@ function limpiarPastilleo(){
     drop.classList.remove('show');
   }
 }
+function renderPastList(){
+  const list = document.getElementById('past-list');
+  const count = document.getElementById('past-count');
 
+  if(!list) return;
+
+  const hoy = new Date().toLocaleDateString('es-MX');
+
+  let registros = [...(CONS || [])].filter(r => {
+    const esEnf = (r.tipoAtencion || '') === 'ENF';
+    const esPast = (r.tipoCons || '').toLowerCase().includes('past');
+    const esHoy = (r.fecha || '') === hoy;
+    return esEnf && esPast && esHoy;
+  });
+
+  registros.sort((a, b) => {
+    const ta = String(a.hora || '');
+    const tb = String(b.hora || '');
+    return tb.localeCompare(ta);
+  });
+
+  if(count){
+    count.textContent = registros.length;
+  }
+
+  if(!registros.length){
+    list.innerHTML = `
+      <div class="empty">
+        <div class="empty-i">💊</div>
+        Sin registros hoy
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = registros.map(r => `
+    <div class="card" style="padding:10px 14px;margin-bottom:8px;border-left:3px solid var(--tl)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:13px">${r.nombre || '—'}</div>
+          <div style="font-size:11px;color:var(--tx3)">
+            No. ${r.noEmp || '—'} · ${r.planta || '—'} · ${r.turno || '—'}
+          </div>
+
+          <div style="margin-top:6px;font-size:12px">
+            <strong>Motivo:</strong> ${r.motivoConsulta || r.diagnostico || '—'}
+          </div>
+
+          <div style="margin-top:4px;font-size:12px">
+            <strong>Medicamento:</strong> ${r.plan || '—'}
+          </div>
+
+          ${r.alergias ? `
+            <div style="margin-top:4px;font-size:11px;color:#92400E;background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;padding:4px 8px;display:inline-block">
+              ⚠️ Alergias: ${r.alergias}
+            </div>
+          ` : ''}
+
+          ${r.cronicos ? `
+            <div style="margin-top:4px;font-size:11px;color:#1E3A8A;background:#DBEAFE;border:1px solid #60A5FA;border-radius:6px;padding:4px 8px;display:inline-block">
+              🩺 Crónicos: ${r.cronicos}
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="text-align:right;min-width:85px">
+          <div class="pill ptl">${r.hora || '—'}</div>
+          <div style="font-size:10px;color:var(--tx3);margin-top:6px">
+            ${r.registradoPor || ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
 async function guardarPastilleo(){
   if(!_pastEmp){
     toast('Selecciona un trabajador primero','err');
@@ -3627,6 +3703,10 @@ async function guardarPastilleo(){
   CONS.push(cons);
   sv(SK.cons, CONS);
 
+  if(typeof renderPastList === 'function'){
+    renderPastList();
+  }
+
   if(_expData){
     if(!_expData.consultas) _expData.consultas = [];
     _expData.consultas.unshift(cons);
@@ -3668,9 +3748,90 @@ async function guardarPastilleo(){
 
   document.getElementById('past-motivo').value = '';
   document.getElementById('past-tx').value = '';
+
+  // Mantener visibles alergias y crónicos para no volver a capturarlos
+  const al = document.getElementById('past-alergias');
+  const cr = document.getElementById('past-cronicos');
+  if(al) al.value = alergias;
+  if(cr) cr.value = cronicos;
 }
 
-function renderPastilleoHoy(){
+function renderPastList(){
+  const list = document.getElementById('past-list');
+  const count = document.getElementById('past-count');
+
+  if(!list) return;
+
+  const hoy = new Date().toLocaleDateString('es-MX');
+
+  let registros = [...(CONS || [])].filter(r => {
+    const esEnf = (r.tipoAtencion || '') === 'ENF';
+    const esPast = String(r.tipoCons || '').toLowerCase().includes('past');
+    const esHoy = (r.fecha || '') === hoy;
+    return esEnf && esPast && esHoy;
+  });
+
+  registros.sort((a, b) => {
+    const ta = String(a.hora || '');
+    const tb = String(b.hora || '');
+    return tb.localeCompare(ta);
+  });
+
+  if(count){
+    count.textContent = registros.length;
+  }
+
+  if(!registros.length){
+    list.innerHTML = `
+      <div class="empty">
+        <div class="empty-i">💊</div>
+        Sin registros hoy
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = registros.map(r => `
+    <div class="card" style="padding:10px 14px;margin-bottom:8px;border-left:3px solid var(--tl)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:13px">${r.nombre || '—'}</div>
+          <div style="font-size:11px;color:var(--tx3)">
+            No. ${r.noEmp || '—'} · ${r.planta || '—'} · ${r.turno || '—'}
+          </div>
+
+          <div style="margin-top:6px;font-size:12px">
+            <strong>Motivo:</strong> ${r.motivoConsulta || r.diagnostico || '—'}
+          </div>
+
+          <div style="margin-top:4px;font-size:12px">
+            <strong>Medicamento:</strong> ${r.plan || '—'}
+          </div>
+
+          ${r.alergias ? `
+            <div style="margin-top:4px;font-size:11px;color:#92400E;background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;padding:4px 8px;display:inline-block">
+              ⚠️ Alergias: ${r.alergias}
+            </div>
+          ` : ''}
+
+          ${r.cronicos ? `
+            <div style="margin-top:4px;font-size:11px;color:#1E3A8A;background:#DBEAFE;border:1px solid #60A5FA;border-radius:6px;padding:4px 8px;display:inline-block">
+              🩺 Crónicos: ${r.cronicos}
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="text-align:right;min-width:85px">
+          <div class="pill ptl">${r.hora || '—'}</div>
+          <div style="font-size:10px;color:var(--tx3);margin-top:6px">
+            ${r.registradoPor || ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+  function renderPastilleoHoy(){
   const hoy = new Date().toLocaleDateString('es-MX');
   const lista = CONS.filter(c=>c.tipoCons==='Pastilleo'&&c.fecha===hoy&&c.registradoPor===USER.nombre)
     .sort((a,b)=>b.folio.localeCompare(a.folio));
