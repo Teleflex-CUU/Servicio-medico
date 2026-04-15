@@ -4257,16 +4257,18 @@ function calcIMCf(){
 
   drop.classList.add('show');  // Muestra el contenedor con los resultados
 }
+  
+  
+  
   // Función para manejar la selección de un empleado
 function seleccionarCitaMain(noEmp) {
-    console.log("Empleado seleccionado: " + noEmp);
-    // Aquí puedes agregar la lógica para mostrar la información del empleado o realizar otras acciones
-    // Ejemplo: Puedes buscar al empleado con ese número y mostrar su información en algún campo de la interfaz.
-    const empleado = HC.find(e => e.noEmp === noEmp);
-    if (empleado) {
-        // Aquí puedes hacer lo que quieras con los datos del empleado
-        console.log(empleado);
-    }
+  const emp = HC.find(e => String(e.noEmp) === String(noEmp));
+  if (!emp) return;
+  document.getElementById('cit-es-main').value = emp.noEmp;
+  const q = document.getElementById('cit-q-main');
+  if (q) q.value = emp.nombre + ' (No.' + emp.noEmp + ')';
+  const drop = document.getElementById('cit-drop-main');
+  if (drop) drop.classList.remove('show');
 }
 </script>
 </body></html>
