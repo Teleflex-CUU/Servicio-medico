@@ -4026,5 +4026,40 @@ function calcIMCf(){
   al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
   cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
 }
+  function buscarCitaMain(q) {
+  const drop = document.getElementById('cit-drop-main');  // El contenedor donde se mostrarán los resultados
+  if (!drop) return;
+
+  q = String(q || '').trim();  // Asegúrate de que el valor de búsqueda no sea nulo y recorta espacios extra
+  if (q.length < 2) {  // Si el término de búsqueda es demasiado corto, no mostrar resultados
+    drop.classList.remove('show');
+    drop.innerHTML = '';
+    return;
+  }
+
+  // Filtrar los empleados (asegurate de tener un array de empleados llamado HC)
+  const lista = (HC || [])
+    .filter(e => String(e.noEmp || '').includes(q) || norm(e.nombre || '').includes(q))  // Filtra por número de empleado o nombre
+    .slice(0, 8);  // Limita a los primeros 8 resultados
+
+  // Si no hay resultados, mostrar el mensaje de "sin resultados"
+  if (!lista.length) {
+    drop.innerHTML = `<div class="si-item"><div class="si-name">Sin resultados</div></div>`;
+    drop.classList.add('show');
+    return;
+  }
+
+  // Si hay resultados, generamos la lista
+  drop.innerHTML = lista.map(e => `
+    <div class="si-item" onclick="seleccionarCitaMain('${esc(e.noEmp || '')}')">
+      <div class="si-name">${e.nombre || '—'}</div>
+      <div class="si-meta">
+        No. ${e.noEmp || '—'} · ${e.planta || '—'} · ${e.depto || '—'} · ${e.turno || '—'}
+      </div>
+    </div>
+  `).join('');
+
+  drop.classList.add('show');  // Muestra el contenedor con los resultados
+}
 </script>
 </body></html>
