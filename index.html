@@ -3988,6 +3988,202 @@ function renderPastList(){
 
 // Render list when tab opens
 
+
+// ════════════════════════════════════════════════════════════════
+// USUARIOS
+// ════════════════════════════════════════════════════════════════
+
+function abrirNuevoUsuario(){
+  document.getElementById('usr-mo-t').textContent='Nuevo usuario';
+  document.getElementById('usr-id').value='';
+  document.getElementById('usr-nombre').value='';
+  document.getElementById('usr-user').value='';
+  const rol=document.getElementById('usr-rol');if(rol)rol.value='enfermeria';
+  const planta=document.getElementById('usr-planta');if(planta)planta.value='';
+  const turno=document.getElementById('usr-turno');if(turno)turno.value='';
+  const activo=document.getElementById('usr-activo');if(activo)activo.value='Sí';
+  openModal('mo-usr');
+}
+
+function editarUsuario(idx){
+  const USR=ld(SK.usr)||[];
+  const u=USR[idx];if(!u)return;
+  document.getElementById('usr-mo-t').textContent='Editar usuario';
+  document.getElementById('usr-id').value=idx;
+  document.getElementById('usr-nombre').value=u.nombre||'';
+  document.getElementById('usr-user').value=u.user||'';
+  const rol=document.getElementById('usr-rol');if(rol)rol.value=u.rol||'enfermeria';
+  const planta=document.getElementById('usr-planta');if(planta)planta.value=u.planta||'';
+  const turno=document.getElementById('usr-turno');if(turno)turno.value=u.turno||'';
+  const activo=document.getElementById('usr-activo');if(activo)activo.value=u.activo||'Sí';
+  openModal('mo-usr');
+}
+
+async function guardarUsuario(){
+  const nombre=(document.getElementById('usr-nombre')?.value||'').trim();
+  const user=(document.getElementById('usr-user')?.value||'').trim();
+  const rol=document.getElementById('usr-rol')?.value||'enfermeria';
+  const planta=document.getElementById('usr-planta')?.value||'';
+  const turno=document.getElementById('usr-turno')?.value||'';
+  const activo=document.getElementById('usr-activo')?.value||'Sí';
+  const idxVal=document.getElementById('usr-id')?.value;
+
+  if(!nombre){toast('El nombre es obligatorio','err');return;}
+  if(!user){toast('El usuario es obligatorio','err');return;}
+
+  const usr={nombre,user,rol,planta,turno,activo};
+  const USR=ld(SK.usr)||[];
+
+  if(idxVal!==''){
+    USR[parseInt(idxVal)]={...USR[parseInt(idxVal)],...usr};
+  } else {
+    USR.push(usr);
+  }
+  sv(SK.usr,USR);
+
+  const r=await gasPost({action:'saveUsuario',...usr});
+  toast(r.ok?'✅ Usuario guardado':'Guardado local — sin conexión','ok');
+  closeModal('mo-usr');
+  renderUsuarios();
+}
+
+// ════════════════════════════════════════════════════════════════
+// DESCARGAS — REPORTE PDF E INCAPACIDADES EXCEL
+// ════════════════════════════════════════════════════════════════
+
+function descargarReporte(){
+  const anio=parseInt(document.getElementById('da-anio')?.value)||new Date().getFullYear();
+  const planta=g('da-planta')||'Todas las plantas';
+  const turno=g('da-turno')||'Todos los turnos';
+  const periodoLabel=document.getElementById('dash-periodo-label')?.textContent||'Año '+anio;
+  const fechaGen=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+
+  let data=[...CONS].filter(c=>(parseInt(c.anio)||0)===anio);
+  if(g('da-planta'))data=data.filter(c=>normEq(c.planta,g('da-planta')));
+  if(g('da-turno'))data=data.filter(c=>normEq(c.turno,g('da-turno')));
+  if(g('da-tipo'))data=data.filter(c=>c.tipoAtencion===g('da-tipo'));
+
+  const byTipo={ENF:0,MED:0};data.forEach(c=>{if(byTipo[c.tipoAtencion]!==undefined)byTipo[c.tipoAtencion]++;});
+  const pacUnicos=new Set(data.map(c=>String(c.noEmp||'').toLowerCase()).filter(Boolean)).size;
+  const dxCnt={};data.forEach(c=>{if(c.diagnostico)dxCnt[c.diagnostico]=(dxCnt[c.diagnostico]||0)+1;});
+  const topDx=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]);
+  const pCnt=PLANTAS.map(p=>({planta:p,total:data.filter(c=>normEq(c.planta,p)).length,enf:data.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='ENF').length,med:data.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='MED').length}));
+  const tCnt=[{t:'Matutino'},{t:'Vespertino'},{t:'Tiempo extra'}].map(x=>({turno:x.t,n:data.filter(c=>normEq(c.turno,x.t)).length}));
+  const diasSem=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const dSem=Array(7).fill(0);
+  data.forEach(c=>{const f=String(c.fecha||'');let dt=null;try{dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00');}catch(e){}if(dt&&!isNaN(dt))dSem[(dt.getDay()+6)%7]++;});
+  const pacCnt={};data.forEach(c=>{if(c.noEmp){const k=String(c.noEmp);if(!pacCnt[k])pacCnt[k]={nombre:c.nombre,noEmp:c.noEmp,planta:c.planta,n:0};pacCnt[k].n++;}});
+  const topPac=Object.values(pacCnt).sort((a,b)=>b.n-a.n).slice(0,15);
+  let incData=[...INC];
+  if(g('da-planta'))incData=incData.filter(r=>normEq(r.planta,g('da-planta')));
+
+  const w=window.open('','_blank');
+  if(!w){toast('Popup bloqueado','err');return;}
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Reporte SO ${anio}<\/title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0F172A;padding:20px}
+    @page{size:letter landscape;margin:10mm}@media print{.np{display:none!important}}
+    h1{font-size:20px;font-weight:900;color:#0F2942}h2{font-size:13px;font-weight:800;color:#0F2942;border-left:4px solid #0D6B5E;padding-left:8px;margin:18px 0 8px}
+    .desc{background:#F0FDF4;border-left:3px solid #0D6B5E;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#166534}
+    .kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+    .kpi{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px;text-align:center}
+    .kv{font-size:24px;font-weight:900;color:#0F2942;font-family:monospace}.kl{font-size:9px;color:#94A3B8;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse;margin-bottom:4px}
+    th{background:#0F2942;color:#fff;padding:6px 8px;text-align:left;font-size:10px}
+    td{padding:5px 8px;border-bottom:1px solid #E2E8F0}tr:nth-child(even) td{background:#F8FAFC}
+    .bar{background:#E2E8F0;border-radius:3px;height:6px;min-width:50px}
+    .bf{height:100%;border-radius:3px}
+    .pbtn{position:fixed;bottom:16px;right:16px;background:#0F2942;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700}
+    .pb{page-break-before:always}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  <\/style><\/head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0F2942;padding-bottom:12px;margin-bottom:16px">
+    <div><h1>Reporte Estadístico — Salud Ocupacional<\/h1>
+    <p style="color:#0D6B5E;font-weight:700;font-size:13px;margin-top:4px">${periodoLabel}<\/p>
+    <p style="color:#94A3B8;font-size:10px;margin-top:2px">Planta: ${planta} · Turno: ${turno} · Generado: ${fechaGen}<\/p><\/div>
+    <div style="text-align:right;font-size:10px;color:#64748B"><strong>AUNA Salud Ocupacional<\/strong><br>Dr. Jaime Iván Martínez Espinoza<br>Cédula: 12021447 · Medicina del Trabajo<\/div>
+  <\/div>
+  <h2>1. Indicadores Clave<\/h2>
+  <div class="desc">Resumen ejecutivo de la actividad del período. Incluye total de atenciones, desglose por área y pacientes únicos atendidos.<\/div>
+  <div class="kgrid">
+    <div class="kpi"><div class="kv">${data.length}<\/div><div class="kl">Total consultas<\/div><\/div>
+    <div class="kpi"><div class="kv">${byTipo.ENF}<\/div><div class="kl">Enfermería<\/div><\/div>
+    <div class="kpi"><div class="kv">${byTipo.MED}<\/div><div class="kl">Médico<\/div><\/div>
+    <div class="kpi"><div class="kv">${pacUnicos}<\/div><div class="kl">Pacientes únicos<\/div><\/div>
+    <div class="kpi"><div class="kv">${INC.filter(r=>incActivaCheck(r)).length}<\/div><div class="kl">Inc. activas<\/div><\/div>
+    <div class="kpi"><div class="kv">${incData.length}<\/div><div class="kl">Total incapacidades<\/div><\/div>
+    <div class="kpi"><div class="kv">${incData.reduce((s,r)=>s+(parseInt(r.incDias)||0),0)}<\/div><div class="kl">Días incapacidad<\/div><\/div>
+    <div class="kpi"><div class="kv">${pacUnicos>0?(data.length/pacUnicos).toFixed(1):0}<\/div><div class="kl">Cons/paciente<\/div><\/div>
+  <\/div>
+  <div class="grid2">
+  <div>
+  <h2>2. Por Planta<\/h2>
+  <div class="desc">Distribución por unidad. Identifica las plantas con mayor demanda asistencial.<\/div>
+  <table><thead><tr><th>Planta<\/th><th>Total<\/th><th>ENF<\/th><th>MED<\/th><th>%<\/th><\/tr><\/thead><tbody>
+  ${pCnt.map(p=>`<tr><td><strong>${p.planta}<\/strong><\/td><td>${p.total}<\/td><td>${p.enf}<\/td><td>${p.med}<\/td><td>${data.length?Math.round(p.total/data.length*100):0}%<\/td><\/tr>`).join('')}
+  <\/tbody><\/table>
+  <h2>3. Por Turno<\/h2>
+  <table><thead><tr><th>Turno<\/th><th>Consultas<\/th><th>%<\/th><\/tr><\/thead><tbody>
+  ${tCnt.map(t=>`<tr><td>${t.turno}<\/td><td>${t.n}<\/td><td>${data.length?Math.round(t.n/data.length*100):0}%<\/td><\/tr>`).join('')}
+  <\/tbody><\/table>
+  <h2>4. Por Día de la Semana<\/h2>
+  <table><thead><tr><th>Día<\/th><th>Consultas<\/th><th>%<\/th><\/tr><\/thead><tbody>
+  ${diasSem.map((d,i)=>`<tr><td>${d}<\/td><td>${dSem[i]}<\/td><td>${data.length?Math.round(dSem[i]/data.length*100):0}%<\/td><\/tr>`).join('')}
+  <\/tbody><\/table>
+  <\/div>
+  <div>
+  <h2>5. Top 15 Diagnósticos<\/h2>
+  <div class="desc">Ranking de diagnósticos más frecuentes. Base para programas preventivos.<\/div>
+  <table><thead><tr><th>#<\/th><th>Diagnóstico<\/th><th>Casos<\/th><th>%<\/th><\/tr><\/thead><tbody>
+  ${topDx.slice(0,15).map(([k,v],i)=>`<tr><td>${i+1}<\/td><td>${k}<\/td><td><strong>${v}<\/strong><\/td><td>${data.length?Math.round(v/data.length*100):0}%<\/td><\/tr>`).join('')||'<tr><td colspan="4">Sin datos<\/td><\/tr>'}
+  <\/tbody><\/table>
+  <h2>6. Pacientes Frecuentes<\/h2>
+  <div class="desc">Trabajadores con más consultas. 8+ consultas = alta frecuencia, requiere evaluación.<\/div>
+  <table><thead><tr><th>Empleado<\/th><th>Planta<\/th><th>Consultas<\/th><th>Nivel<\/th><\/tr><\/thead><tbody>
+  ${topPac.map(p=>`<tr><td><strong>${p.nombre}<\/strong> <span style="color:#94A3B8">No.${p.noEmp}<\/span><\/td><td>${p.planta||'—'}<\/td><td><strong>${p.n}<\/strong><\/td><td style="color:${p.n>=8?'#B91C1C':p.n>=4?'#92400E':'#166534'}">${p.n>=8?'🔴 Alta':p.n>=4?'🟡 Moderada':'🟢 Normal'}<\/td><\/tr>`).join('')||'<tr><td colspan="4">Sin datos<\/td><\/tr>'}
+  <\/tbody><\/table>
+  <\/div><\/div>
+  <div style="margin-top:20px;border-top:1px solid #E2E8F0;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#94A3B8">
+    <span>AUNA Salud Ocupacional · Teleflex Medical de México<\/span>
+    <span>Generado: ${fechaGen}<\/span><span>Confidencial — Uso interno<\/span>
+  <\/div>
+  <button class="pbtn np" onclick="window.print()">🖨️ Imprimir / PDF<\/button>
+  <\/body><\/html>`);
+  w.document.close();setTimeout(()=>w.print(),700);
+}
+
+function descargarIncapacidades(){
+  if(typeof XLSX==='undefined'){toast('Librería Excel no cargada','err');return;}
+  const planta=g('da-planta')||'';
+  const turno=g('da-turno')||'';
+  let datos=[...INC];
+  if(planta)datos=datos.filter(r=>normEq(r.planta,planta));
+  if(turno)datos=datos.filter(r=>normEq(r.turno,turno));
+
+  const cols=['Folio','Fecha','NoEmp','Nombre','Planta','Turno','Depto','NSS',
+              'Tipo','CIE10','Diagnostico','FechaInicio','FechaFin','Dias','Estado','RegistradoPor'];
+  const toRow=r=>[r.folio||'',r.fecha||'',r.noEmp||'',r.nombre||'',r.planta||'',
+    r.turno||'',r.depto||'',r.nss||'',r.tipo||r.incapacidad||'',r.cie10||'',
+    r.diagnostico||'',r.incInicio||'',r.incFin||'',r.incDias||'',r.estado||'',r.registradoPor||''];
+
+  const wb=XLSX.utils.book_new();
+  const wsAll=XLSX.utils.aoa_to_sheet([cols,...datos.map(toRow)]);
+  XLSX.utils.book_append_sheet(wb,wsAll,'Todas');
+  const mat=datos.filter(r=>normInc(r.tipo||r.incapacidad||'','maternidad'));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cols,...mat.map(toRow)]),'Maternidad');
+  const gen=datos.filter(r=>normInc(r.tipo||r.incapacidad||'','general'));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cols,...gen.map(toRow)]),'Enfermedad general');
+  const riesgo=datos.filter(r=>normInc(r.tipo||r.incapacidad||'','trabajo')||normInc(r.tipo||r.incapacidad||'','trayecto'));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cols,...riesgo.map(toRow)]),'Riesgo trabajo-trayecto');
+  const prol=datos.filter(r=>(parseInt(r.incDias)||0)>=28);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([cols,...prol.map(toRow)]),'Prolongadas +28d');
+
+  XLSX.writeFile(wb,'Incapacidades_Teleflex_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('✅ Excel descargado','ok');
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
   initSimpleSearches();
@@ -4025,6 +4221,54 @@ function calcIMCf(){
 
   al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
   cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
+}
+  function buscarCitaMain(q) {
+  const drop = document.getElementById('cit-drop-main');  // El contenedor donde se mostrarán los resultados
+  if (!drop) return;
+
+  q = String(q || '').trim();  // Asegúrate de que el valor de búsqueda no sea nulo y recorta espacios extra
+  if (q.length < 2) {  // Si el término de búsqueda es demasiado corto, no mostrar resultados
+    drop.classList.remove('show');
+    drop.innerHTML = '';
+    return;
+  }
+
+  // Filtrar los empleados (asegurate de tener un array de empleados llamado HC)
+  const lista = (HC || [])
+    .filter(e => String(e.noEmp || '').includes(q) || norm(e.nombre || '').includes(q))  // Filtra por número de empleado o nombre
+    .slice(0, 8);  // Limita a los primeros 8 resultados
+
+  // Si no hay resultados, mostrar el mensaje de "sin resultados"
+  if (!lista.length) {
+    drop.innerHTML = `<div class="si-item"><div class="si-name">Sin resultados</div></div>`;
+    drop.classList.add('show');
+    return;
+  }
+
+  // Si hay resultados, generamos la lista
+  drop.innerHTML = lista.map(e => `
+    <div class="si-item" onclick="seleccionarCitaMain('${esc(e.noEmp || '')}')">
+      <div class="si-name">${e.nombre || '—'}</div>
+      <div class="si-meta">
+        No. ${e.noEmp || '—'} · ${e.planta || '—'} · ${e.depto || '—'} · ${e.turno || '—'}
+      </div>
+    </div>
+  `).join('');
+
+  drop.classList.add('show');  // Muestra el contenedor con los resultados
+}
+  // Función para manejar la selección de un empleado
+function seleccionarCitaMain(noEmp) {
+    console.log("Empleado seleccionado: " + noEmp);
+    // Aquí puedes agregar la lógica para mostrar la información del empleado o realizar otras acciones
+    // Ejemplo: Puedes buscar al empleado con ese número y mostrar su información en algún campo de la interfaz.
+    const empleado = HC.find(e => e.noEmp === noEmp);
+    if (empleado) {
+        // Aquí puedes hacer lo que quieras con los datos del empleado
+        console.log(empleado);
+        // Ejemplo: Muestra la información del empleado seleccionado
+        alert(`Empleado seleccionado: ${empleado.nombre}`);
+    }
 }
 </script>
 </body></html>
