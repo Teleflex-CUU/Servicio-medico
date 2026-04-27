@@ -601,6 +601,13 @@ function buildConsultaFromForm(){
 }
 
 function cargarExtAutocomplete(){
+  const extList=JSON.parse(localStorage.getItem('so_ext')||'[]');
+  const dl=document.getElementById('ext-nombres-list');
+  const dl2=document.getElementById('ext-empresas-list');
+  if(dl) dl.innerHTML=extList.map(e=>`<option value="${esc(e.nombre)}">`).join('');
+  if(dl2) dl2.innerHTML=[...new Set(extList.map(e=>e.empresa).filter(Boolean))].map(e=>`<option value="${esc(e)}">`).join('');
+  setTimeout(()=>{const n=document.getElementById('ext-nombre');if(n)n.focus();},100);
+
   // Autocomplete for external employee modal
   const inp=document.getElementById('ext-nombre');
   if(inp) inp.focus();
@@ -647,10 +654,12 @@ function renderInc(){
             ${esProlongada?'<span class="pill ppu">⏳ Prolongada</span>':''}
             ${r.folio&&!r.folio.startsWith('INC-')?`<span class="folio" title="Folio IMSS">${r.folio}</span>`:''}
           </div>
-          <div style="font-size:11px;color:var(--tx3)">No.${r.noEmp||'—'} · ${r.planta||'—'} · Inicio: ${r.incInicio||'—'} · ${r.incDias||'?'} días · Retorno: ${r.incFin||'—'}</div>
+          <div style="font-size:11px;color:var(--tx3)">No.${r.noEmp||'—'} · ${r.planta||'—'} · Inicio: ${fmtIncFecha(r.incInicio)} · ${r.incDias||'?'} días · Retorno: ${fmtIncFecha(r.incFin)}</div>
         </div>
         <div style="display:flex;gap:4px">
-          <button class="btn btn-gh btn-xs" onclick="imprimirConstanciaInc('${esc(r.folio||'')}')">🖨️</button>
+          <button class="btn btn-gh btn-xs" title="Editar" onclick="editarIncapacidad('${esc(r.folio||'')}')">✏️</button>
+          <button class="btn btn-gh btn-xs" title="Eliminar" onclick="eliminarIncapacidad('${esc(r.folio||'')}')">🗑️</button>
+          <button class="btn btn-gh btn-xs" title="Imprimir" onclick="imprimirConstanciaInc('${esc(r.folio||'')}')">🖨️</button>
         </div>
       </div>
     </div>`;
@@ -1143,6 +1152,16 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <label>Enfermedades crónicas</label>
 <input type="text" id="past-cronicos" placeholder="Enfermedades crónicas / antecedentes" style="font-size:13px;font-weight:600">  </div>
 </div>
+      <div class="g2" style="margin-bottom:4px">
+        <div class="fi" style="margin:0">
+          <label>T/A <span style="font-weight:400;font-size:10px;color:var(--tx3)">(mmHg)</span></label>
+          <input type="text" id="past-ta" placeholder="120/80">
+        </div>
+        <div class="fi" style="margin:0">
+          <label>Glucosa <span style="font-weight:400;font-size:10px;color:var(--tx3)">(mg/dL)</span></label>
+          <input type="number" id="past-glucosa" placeholder="100">
+        </div>
+      </div>
       <div class="fi">
         <label>Motivo / Síntoma</label>
         <input type="text" id="past-motivo" placeholder="Ej: cefalea, dolor muscular, cólico..." style="font-size:13px">
@@ -1168,6 +1187,32 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     </div>
     <div id="past-list"><div class="empty"><div class="empty-i">💊</div>Sin registros hoy</div></div>
   </div>
+
+  <!-- Estadística del día -->
+  <div class="card cp" style="margin-top:12px" id="past-stats-card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec-t" style="margin:0">📊 Estadística del día</div>
+      <span id="past-stats-turno" style="font-size:11px;color:var(--tx3)"></span>
+    </div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div style="background:var(--sf3);border-radius:8px;padding:10px;text-align:center;border-left:3px solid var(--tl)">
+        <div id="past-stat-total" style="font-size:24px;font-weight:900;color:var(--tl);font-family:monospace">0</div>
+        <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;font-weight:700">Total pastilleos</div>
+      </div>
+      <div style="background:var(--sf3);border-radius:8px;padding:10px;text-align:center;border-left:3px solid var(--bl)">
+        <div id="past-stat-pac" style="font-size:24px;font-weight:900;color:var(--bl);font-family:monospace">0</div>
+        <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;font-weight:700">Pacientes únicos</div>
+      </div>
+      <div style="background:var(--sf3);border-radius:8px;padding:10px;text-align:center;border-left:3px solid var(--am)">
+        <div id="past-stat-med" style="font-size:24px;font-weight:900;color:var(--am);font-family:monospace">—</div>
+        <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;font-weight:700">Motivo frecuente</div>
+      </div>
+    </div>
+    <!-- Top motivos -->
+    <div class="sec-t" style="margin-bottom:8px">Motivos principales</div>
+    <div id="past-stat-motivos"></div>
+  </div>
 </div>
 
 <!-- ═══ INCAPACIDADES ═══ -->
@@ -1176,8 +1221,8 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div><h2>Incapacidades</h2></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-gh btn-sm" onclick="syncInc()">🔄 Sync</button>
-      <button class="btn btn-gh btn-sm" onclick="window.print()">🖨️ Imprimir</button>
-      <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="descargarIncapacidades()">📥 Descargar Excel</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#0F2942,#1D3F8A);color:#fff;font-weight:700" onclick="reporteIncSemanal()">📊 Reporte semanal</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="descargarIncSemanalExcel()">📥 Excel nómina</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-weight:800;font-size:13px;padding:8px 18px" onclick="openModal('mo-inc')">📋 + Nueva incapacidad</button>
     </div>
   </div>
@@ -1715,6 +1760,10 @@ function openModal(id){
   const e=document.getElementById(id);if(e)e.classList.add('open');
   if(id==='mo-ext') cargarExtAutocomplete();
   if(id==='mo-inc'){
+    const moInc=document.getElementById('mo-inc');
+    if(moInc) delete moInc.dataset.editFolio;
+    const tInc=moInc?.querySelector('.mt-mo');
+    if(tInc) tInc.textContent='📋 Nueva Incapacidad';
     const reg=document.getElementById('inc-reg');if(reg)reg.value=USER?USER.nombre:'';
     const fc=document.getElementById('inc-fecha-cap');if(fc)fc.value=new Date().toLocaleDateString('es-MX');
     const iniEl=document.getElementById('inc-ii');
@@ -2600,6 +2649,11 @@ function renderInc(){
   }).join('');
 }
 async function guardarInc(){
+  const mo=document.getElementById('mo-inc');
+  const editFolio=mo?.dataset.editFolio||'';
+  if(mo) delete mo.dataset.editFolio;
+  const titulo=mo?.querySelector('.mt-mo');
+  if(titulo) titulo.textContent='📋 Nueva Incapacidad';
   const noEmp=g('inc-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
   const ini=g('inc-ii');if(!ini){toast('La fecha inicio es obligatoria','err');return;}
   const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{};
@@ -3230,8 +3284,8 @@ function buscarCapEmp(val){
   drop.innerHTML=matches.map(e=>`<div class="si-item" onclick="abrirConsultaEmpleado('${esc(e.noEmp)}')"><div class="si-name">${e.nombre}</div><div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}</div></div>`).join('');
   drop.classList.add('show');
 }
-function abrirConsultaEmpleado(noEmp){
-  const emp=HC.find(x=>String(x.noEmp)===String(noEmp));
+function abrirConsultaEmpleado(noEmp, empObj){
+  const emp=empObj||(HC.find(x=>String(x.noEmp)===String(noEmp)));
   if(!emp){toast('Empleado no encontrado','err');return;}
   _capEmp=emp;
   _empActual=emp;
@@ -3577,8 +3631,8 @@ function cargarDatosClinicosPastilleo(emp){
   renderAlertaFrecuenciaPastilleo(emp);
 }
   
-function selPastEmp(noEmp){
-  const emp = HC.find(e=>String(e.noEmp)===String(noEmp));
+function selPastEmp(noEmp, empObj){
+  const emp = empObj||(HC.find(e=>String(e.noEmp)===String(noEmp)));
   if(!emp){toast('Empleado no encontrado','err');return;}
   _pastEmp = emp;
 
@@ -3965,33 +4019,82 @@ function renderPastList(){
   `).join('');
 }
   function renderPastilleoHoy(){
-  const hoy = new Date().toLocaleDateString('es-MX');
-  const lista = CONS.filter(c=>c.tipoCons==='Pastilleo'&&c.fecha===hoy&&c.registradoPor===USER.nombre)
-    .sort((a,b)=>b.folio.localeCompare(a.folio));
-  const el = document.getElementById('past-list');
-  const cnt = document.getElementById('past-count');
-  if(cnt) cnt.textContent = lista.length;
+  const ahora=new Date();
+  const hace24=new Date(ahora.getTime()-24*60*60*1000);
+  // Filter pastilleos from last 24h by this user
+  const lista=CONS.filter(c=>{
+    if(c.tipoCons!=='Pastilleo') return false;
+    if(c.registradoPor!==USER.nombre) return false;
+    // Parse fecha
+    const f=String(c.fecha||'');
+    let dt=null;
+    try{
+      if(f.includes('/')) dt=new Date(f.split('/').reverse().join('-')+'T'+(c.hora||'00:00')+':00');
+      else dt=new Date(f+'T'+(c.hora||'00:00')+':00');
+    }catch(e){}
+    return dt&&dt>=hace24;
+  }).sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));
+  const el=document.getElementById('past-list');
+  const cnt=document.getElementById('past-count');
+  if(cnt) cnt.textContent=lista.length;
   if(!el) return;
-  if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">💊</div>Sin pastilleos hoy</div>';return;}
-  el.innerHTML = lista.map(c=>`
+  if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">💊</div>Sin pastilleos en las últimas 24 horas</div>';return;}
+  el.innerHTML=lista.map(c=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--bor);font-size:12px">
       <div>
         <strong>${c.nombre}</strong>
         <span style="color:var(--tx3);margin-left:6px">No.${c.noEmp}</span>
         <div style="color:var(--tx3);font-size:11px;margin-top:2px">
           ${c.diagnostico||'—'} → <span style="color:var(--tl);font-weight:600">${c.plan||'—'}</span>
-          <span style="margin-left:6px">${c.hora||''}</span>
+          ${c.ta?`<span style="margin-left:8px;color:var(--rd)">T/A: ${c.ta}</span>`:''}
+          ${c.glucosa?`<span style="margin-left:6px;color:var(--am)">Glu: ${c.glucosa}</span>`:''}
+          <span style="margin-left:8px;color:var(--tx3)">${c.hora||''}</span>
         </div>
       </div>
     </div>`).join('');
+
+  // ── Render estadística ─────────────────────────────────────
+  const statsCard=document.getElementById('past-stats-card');
+  if(statsCard) statsCard.style.display=lista.length?'block':'none';
+  if(!lista.length) return;
+
+  // KPIs
+  const pacUnicos=new Set(lista.map(c=>String(c.noEmp))).size;
+  const motivoCnt={};
+  lista.forEach(c=>{
+    const m=(c.diagnostico||'Sin especificar').trim();
+    motivoCnt[m]=(motivoCnt[m]||0)+1;
+  });
+  const topMotivos=Object.entries(motivoCnt).sort((a,b)=>b[1]-a[1]);
+  const maxM=topMotivos[0]?.[1]||1;
+
+  const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setEl('past-stat-total',lista.length);
+  setEl('past-stat-pac',pacUnicos);
+  setEl('past-stat-med',topMotivos[0]?.[0]?.slice(0,16)||'—');
+
+  // Turno label
+  const turnoEl=document.getElementById('past-stat-turno');
+  if(turnoEl){
+    const ahora2=new Date();
+    const h=ahora2.getHours();
+    turnoEl.textContent=h<14?'Turno Matutino':h<22?'Turno Vespertino':'Turno Nocturno';
+  }
+
+  // Top motivos bars
+  const motEl=document.getElementById('past-stat-motivos');
+  if(motEl){
+    motEl.innerHTML=topMotivos.slice(0,8).map(([mot,n],i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bor)">
+        <span style="min-width:18px;font-size:10px;font-weight:700;color:var(--tx3)">${i+1}</span>
+        <div style="flex:1;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mot}</div>
+        <div style="background:var(--sf3);border-radius:3px;height:6px;width:80px;flex-shrink:0">
+          <div style="height:100%;background:var(--tl);border-radius:3px;width:${Math.round(n/maxM*100)}%"></div>
+        </div>
+        <span style="font-size:11px;font-weight:800;min-width:18px;text-align:right">${n}</span>
+      </div>`).join('');
+  }
 }
-
-// Render list when tab opens
-
-
-// ════════════════════════════════════════════════════════════════
-// USUARIOS
-// ════════════════════════════════════════════════════════════════
 
 function abrirNuevoUsuario(){
   document.getElementById('usr-mo-t').textContent='Nuevo usuario';
@@ -4183,6 +4286,351 @@ function descargarIncapacidades(){
   toast('✅ Excel descargado','ok');
 }
 
+
+
+// ── EDITAR INCAPACIDAD ────────────────────────────────────────
+function editarIncapacidad(folio){
+  const r=INC.find(i=>String(i.folio)===String(folio));
+  if(!r){toast('Incapacidad no encontrada','err');return;}
+  // Fill modal with existing data
+  const g=id=>document.getElementById(id);
+  if(g('inc-folio')) g('inc-folio').value=r.folio||'';
+  if(g('inc-es')) g('inc-es').value=r.noEmp||'';
+  // Fill employee search
+  const eq=g('inc-eq'); if(eq) eq.value=r.nombre||'';
+  if(g('inc-tipo')) g('inc-tipo').value=r.tipo||r.incapacidad||'Enfermedad general';
+  if(g('inc-sec')) g('inc-sec').value=r.secuencia||'Inicial';
+  if(g('inc-cv')) g('inc-cv').value=r.cie10||'';
+  if(g('inc-dg')) g('inc-dg').value=r.diagnostico||'';
+  if(g('inc-ii')) g('inc-ii').value=r.incInicio?r.incInicio.split('/').reverse().join('-'):'';
+  if(g('inc-if')) g('inc-if').value=r.incFin?r.incFin.split('/').reverse().join('-'):'';
+  if(g('inc-ds')) g('inc-ds').value=r.incDias||'';
+  if(g('inc-reg')) g('inc-reg').value=r.registradoPor||USER.nombre;
+  // Mark as edit mode
+  const mo=document.getElementById('mo-inc');
+  if(mo) mo.dataset.editFolio=folio;
+  const titulo=mo?.querySelector('.mt-mo');
+  if(titulo) titulo.textContent='✏️ Editar Incapacidad';
+  openModal('mo-inc');
+}
+
+
+// ── GUARDAR CITA DESDE PANTALLA PRINCIPAL ────────────────────
+async function guardarCitaMain(){
+  const noEmp=document.getElementById('cit-es-main')?.value||'';
+  const nombre=document.getElementById('cit-q-main')?.value||'';
+  const fecha=document.getElementById('cit-fecha-main')?.value||'';
+  const hora=document.getElementById('cit-hora-main')?.value||'';
+  const motivo=document.getElementById('cit-motivo-main')?.value||'';
+  const notas=document.getElementById('cit-notas-main')?.value||'';
+  if(!noEmp){toast('Selecciona un empleado','err');return;}
+  if(!fecha){toast('Selecciona la fecha','err');return;}
+  if(!motivo){toast('Escribe el motivo','err');return;}
+  const emp=HC.find(e=>String(e.noEmp)===String(noEmp))||{};
+  const folio='CIT-'+Date.now().toString().slice(-6);
+  const cita={
+    folio, fecha:new Date(fecha+'T12:00').toLocaleDateString('es-MX'),
+    hora, motivo, notas,
+    noEmp, nombre:emp.nombre||nombre.split('(')[0].trim(),
+    planta:emp.planta||'', depto:emp.depto||'',
+    area:USER.rol==='medico'?'MED':'ENF',
+    estado:'Pendiente', registradoPor:USER.nombre
+  };
+  CITAS.push(cita);
+  sv(SK.citas,CITAS);
+  const r=await gasPost({action:'saveCita',...cita});
+  toast(r.ok?'✅ Cita agendada':'Guardada sin conexión','ok');
+  // Clear form
+  const clear=id=>{const e=document.getElementById(id);if(e)e.value='';};
+  clear('cit-q-main');clear('cit-es-main');clear('cit-fecha-main');
+  clear('cit-hora-main');clear('cit-motivo-main');clear('cit-notas-main');
+  renderCitas();
+}
+
+// ── GUARDAR CITA DESDE MODAL ──────────────────────────────────
+async function guardarCita(){
+  const noEmp=document.getElementById('cit-es')?.value||'';
+  const fecha=document.getElementById('cit-fecha')?.value||'';
+  const hora=document.getElementById('cit-hora')?.value||'';
+  const motivo=document.getElementById('cit-motivo')?.value||'';
+  const notas=document.getElementById('cit-notas')?.value||'';
+  if(!noEmp){toast('Selecciona un empleado','err');return;}
+  if(!fecha){toast('Selecciona la fecha','err');return;}
+  if(!motivo){toast('Escribe el motivo','err');return;}
+  const emp=HC.find(e=>String(e.noEmp)===String(noEmp))||{};
+  const folio='CIT-'+Date.now().toString().slice(-6);
+  const cita={
+    folio, fecha:new Date(fecha+'T12:00').toLocaleDateString('es-MX'),
+    hora, motivo, notas,
+    noEmp, nombre:emp.nombre||'',
+    planta:emp.planta||'', depto:emp.depto||'',
+    area:USER.rol==='medico'?'MED':'ENF',
+    estado:'Pendiente', registradoPor:USER.nombre
+  };
+  CITAS.push(cita);
+  sv(SK.citas,CITAS);
+  const r=await gasPost({action:'saveCita',...cita});
+  toast(r.ok?'✅ Cita agendada':'Guardada sin conexión','ok');
+  closeModal('mo-cita');
+  renderCitas();
+}
+
+
+// ── EXTERNO / VISITANTE ───────────────────────────────────────
+function registrarExterno(){
+  const nombre=(document.getElementById('ext-nombre')?.value||'').trim();
+  const empresa=(document.getElementById('ext-empresa')?.value||'').trim();
+  if(!nombre){toast('Escribe el nombre del visitante','err');document.getElementById('ext-nombre')?.focus();return;}
+  const emp={
+    noEmp:'EXT-'+Date.now().toString().slice(-4),
+    nombre, empresa,
+    planta:'Externa', depto:empresa||'—',
+    puesto:'Externo/Visitante',
+    nss:'', genero:'', turno:'', esExterno:true
+  };
+  // Save to known externals autocomplete
+  const extList=JSON.parse(localStorage.getItem('so_ext')||'[]');
+  if(!extList.find(e=>e.nombre===nombre)){
+    extList.unshift({nombre,empresa});
+    if(extList.length>50) extList.pop();
+    localStorage.setItem('so_ext',JSON.stringify(extList));
+  }
+  closeModal('mo-ext');
+  // Load into whichever screen is active
+  const scCap=document.getElementById('sc-captura');
+  const scPast=document.getElementById('sc-pastilleo');
+  if(scPast&&scPast.classList.contains('on')){
+    selPastEmp(null, emp);
+  } else {
+    if(!scCap||!scCap.classList.contains('on')) go('captura');
+    setTimeout(()=>abrirConsultaEmpleado(null, emp), 150);
+  }
+}
+
+
+function fmtIncFecha(f){
+  if(!f) return '—';
+  const s=String(f).trim();
+  // Already dd/mm/yyyy
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+  // yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)){
+    const [y,m,d]=s.slice(0,10).split('-');
+    return `${d}/${m}/${y}`;
+  }
+  try{
+    const dt=new Date(s);
+    if(!isNaN(dt)) return dt.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }catch(e){}
+  return s;
+}
+
+
+// ── ELIMINAR INCAPACIDAD ─────────────────────────────────────────
+function eliminarIncapacidad(folio){
+  if(!confirm('¿Eliminar esta incapacidad? Esta acción no se puede deshacer.')) return;
+  const idx=INC.findIndex(r=>String(r.folio)===String(folio));
+  if(idx<0){toast('No encontrada','err');return;}
+  INC.splice(idx,1);
+  sv(SK.inc,INC);
+  renderInc();
+  toast('✅ Incapacidad eliminada','ok');
+  gasPost({action:'delInc',folio}).catch(()=>{});
+}
+
+// ── REPORTE SEMANAL INCAPACIDADES ────────────────────────────────
+function reporteIncSemanal(){
+  const planta=g('if-planta')||'';
+  const turno =g('if-turno') ||'';
+  const tipo  =g('if-tipo')  ||'';
+
+  // Semana actual
+  const ahora=new Date();
+  const lunes=new Date(ahora);
+  lunes.setDate(ahora.getDate()-((ahora.getDay()+6)%7));
+  lunes.setHours(0,0,0,0);
+  const domingo=new Date(lunes);
+  domingo.setDate(lunes.getDate()+6);
+  domingo.setHours(23,59,59,999);
+  const semana=getWeek(ahora);
+  const anio=ahora.getFullYear();
+
+  const fmt=d=>d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const periodoLabel=`Semana ${semana} — ${fmt(lunes)} al ${fmt(domingo)}`;
+  const fechaGen=ahora.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Filter
+  let datos=[...INC].filter(r=>{
+    const f=String(r.incInicio||r.fecha||'');
+    let dt=null;
+    try{dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00');}catch(e){}
+    return dt&&dt>=lunes&&dt<=domingo;
+  });
+  if(planta)datos=datos.filter(r=>normEq(r.planta,planta));
+  if(turno) datos=datos.filter(r=>normEq(r.turno,turno));
+  if(tipo)  datos=datos.filter(r=>normInc(r.tipo||r.incapacidad||'',tipo));
+  datos.sort((a,b)=>String(a.planta||'').localeCompare(String(b.planta||'')));
+
+  const total=datos.length;
+  const diasTot=datos.reduce((s,r)=>s+(parseInt(r.incDias)||0),0);
+  const iniciales=datos.filter(r=>normInc(r.secuencia||'','inicial')||!r.secuencia).length;
+  const subsec=datos.filter(r=>normInc(r.secuencia||'','subsec')).length;
+
+  const w=window.open('','_blank');
+  if(!w){toast('Popup bloqueado — permite ventanas emergentes','err');return;}
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Reporte Incapacidades ${periodoLabel}<\/title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:11px;color:#0F172A;padding:16px}
+    @page{size:letter landscape;margin:10mm}
+    @media print{.np{display:none!important}}
+    h1{font-size:18px;font-weight:900;color:#0F2942}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0F2942;padding-bottom:10px;margin-bottom:14px}
+    .kgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+    .kpi{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:8px;text-align:center}
+    .kv{font-size:22px;font-weight:900;font-family:monospace}
+    .kl{font-size:8px;color:#94A3B8;text-transform:uppercase;margin-top:2px}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    th{background:#0F2942;color:#fff;padding:6px 8px;text-align:left;font-weight:700;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #E2E8F0;vertical-align:top}
+    tr:nth-child(even) td{background:#F8FAFC}
+    .pill{display:inline-block;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700}
+    .pin{background:#CCFBF1;color:#0D6B5E}
+    .pmat{background:#F3E8FF;color:#7C3AED}
+    .prt{background:#FEE2E2;color:#B91C1C}
+    .psub{background:#FEF3C7;color:#92400E}
+    .pbtn{position:fixed;bottom:14px;right:14px;background:#0F2942;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700}
+    .planta-header{background:#1D3F8A;color:#fff;padding:5px 8px;font-weight:700;font-size:11px;grid-column:1/-1}
+  <\/style><\/head><body>
+  <div class="header">
+    <div>
+      <h1>Reporte de Incapacidades — Nómina</h1>
+      <p style="color:#0D6B5E;font-weight:700;font-size:12px;margin-top:4px">${periodoLabel}</p>
+      <p style="color:#94A3B8;font-size:10px;margin-top:2px">Planta: ${planta||'Todas'} &nbsp;·&nbsp; Turno: ${turno||'Todos'} &nbsp;·&nbsp; Generado: ${fechaGen}</p>
+    </div>
+    <div style="text-align:right;font-size:10px;color:#64748B">
+      <strong>AUNA Salud Ocupacional</strong><br>
+      Teleflex Medical de México S.A. de C.V.<br>
+      Dr. Jaime Iván Martínez Espinoza · Cédula 12021447
+    </div>
+  </div>
+  <div class="kgrid">
+    <div class="kpi"><div class="kv" style="color:#0F2942">${total}</div><div class="kl">Total incapacidades</div></div>
+    <div class="kpi"><div class="kv" style="color:#DC2626">${diasTot}</div><div class="kl">Días totales</div></div>
+    <div class="kpi"><div class="kv" style="color:#0D6B5E">${iniciales}</div><div class="kl">Iniciales</div></div>
+    <div class="kpi"><div class="kv" style="color:#D97706">${subsec}</div><div class="kl">Subsecuentes</div></div>
+    <div class="kpi"><div class="kv" style="color:#7C3AED">${datos.filter(r=>normInc(r.tipo||r.incapacidad||'','maternidad')).length}</div><div class="kl">Maternidad</div></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>No. Emp</th><th>Nombre</th><th>Planta</th><th>Depto</th><th>Puesto</th>
+      <th>NSS</th><th>Turno</th><th>Tipo</th><th>Secuencia</th>
+      <th>Folio IMSS</th><th>CIE-10</th><th>Diagnóstico</th>
+      <th>Inicio</th><th>Fin / Retorno</th><th>Días</th><th>Estado</th><th>Registró</th>
+    </tr></thead>
+    <tbody>
+      ${datos.length?datos.map(r=>{
+        const tipo=r.tipo||r.incapacidad||'—';
+        const tc=normInc(tipo,'maternidad')?'pmat':normInc(tipo,'trabajo')||normInc(tipo,'trayecto')?'prt':'pin';
+        const sc=normInc(r.secuencia||'','subsec')?'psub':'pin';
+        return`<tr>
+          <td style="font-weight:700;font-family:monospace">${r.noEmp||'—'}</td>
+          <td style="font-weight:600;min-width:140px">${r.nombre||'—'}</td>
+          <td>${r.planta||'—'}</td>
+          <td>${r.depto||'—'}</td>
+          <td>${r.puesto||'—'}</td>
+          <td style="font-family:monospace">${r.nss||'—'}</td>
+          <td>${r.turno||'—'}</td>
+          <td><span class="pill ${tc}">${tipo}</span></td>
+          <td><span class="pill ${sc}">${r.secuencia||'Inicial'}</span></td>
+          <td style="font-family:monospace">${r.folio||'—'}</td>
+          <td style="font-family:monospace">${r.cie10||'—'}</td>
+          <td>${r.diagnostico||'—'}</td>
+          <td style="white-space:nowrap">${fmtIncFecha(r.incInicio)}</td>
+          <td style="white-space:nowrap">${fmtIncFecha(r.incFin)}</td>
+          <td style="text-align:center;font-weight:800">${r.incDias||'—'}</td>
+          <td><span class="pill ${r.estado==='Activa'?'pin':'pgy'}" style="${r.estado==='Activa'?'':'background:#F1F5F9;color:#64748B'}">${r.estado||'—'}</span></td>
+          <td>${r.registradoPor||'—'}</td>
+        </tr>`;
+      }).join(''):'<tr><td colspan="17" style="text-align:center;padding:20px;color:#94A3B8">Sin incapacidades en este período</td></tr>'}
+    </tbody>
+  </table>
+  <div style="margin-top:14px;border-top:1px solid #E2E8F0;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#94A3B8">
+    <span>AUNA Salud Ocupacional · Teleflex Medical de México</span>
+    <span>Reporte para nómina · ${periodoLabel} · ${fechaGen}</span>
+    <span>Confidencial — Uso interno de RRHH</span>
+  </div>
+  <button class="pbtn np" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  <\/body><\/html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),700);
+}
+
+// ── DESCARGAR EXCEL SEMANAL NÓMINA ───────────────────────────────
+function descargarIncSemanalExcel(){
+  if(typeof XLSX==='undefined'){toast('Librería Excel no cargada','err');return;}
+  const planta=g('if-planta')||'';
+  const turno =g('if-turno') ||'';
+
+  const ahora=new Date();
+  const lunes=new Date(ahora);
+  lunes.setDate(ahora.getDate()-((ahora.getDay()+6)%7));
+  lunes.setHours(0,0,0,0);
+  const domingo=new Date(lunes);
+  domingo.setDate(lunes.getDate()+6);
+  domingo.setHours(23,59,59,999);
+  const semana=getWeek(ahora);
+
+  let datos=[...INC].filter(r=>{
+    const f=String(r.incInicio||r.fecha||'');
+    let dt=null;
+    try{dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00');}catch(e){}
+    return dt&&dt>=lunes&&dt<=domingo;
+  });
+  if(planta)datos=datos.filter(r=>normEq(r.planta,planta));
+  if(turno) datos=datos.filter(r=>normEq(r.turno,turno));
+
+  const cols=['No. Empleado','Nombre','Planta','Departamento','Puesto','NSS','Turno',
+              'Tipo de incapacidad','Secuencia','Folio IMSS','CIE-10','Diagnóstico',
+              'Fecha inicio','Fecha fin / retorno','Días','Días acumulados','Estado','Registrado por'];
+  const rows=datos.map(r=>[
+    r.noEmp||'',r.nombre||'',r.planta||'',r.depto||'',r.puesto||'',r.nss||'',r.turno||'',
+    r.tipo||r.incapacidad||'',r.secuencia||'Inicial',
+    r.folio||'',r.cie10||'',r.diagnostico||'',
+    fmtIncFecha(r.incInicio),fmtIncFecha(r.incFin),
+    parseInt(r.incDias)||0,
+    // Días acumulados: sum of all incapacidades for same employee
+    INC.filter(x=>String(x.noEmp)===String(r.noEmp)).reduce((s,x)=>s+(parseInt(x.incDias)||0),0),
+    r.estado||'',r.registradoPor||''
+  ]);
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([cols,...rows]);
+  // Column widths
+  ws['!cols']=[{wch:12},{wch:30},{wch:12},{wch:20},{wch:20},{wch:16},{wch:12},
+               {wch:22},{wch:14},{wch:16},{wch:8},{wch:25},{wch:14},{wch:14},{wch:6},{wch:6},{wch:10},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,`Semana ${semana}`);
+
+  // Summary sheet
+  const PLANTAS_LIST=['Américas','Barrancas','Cantera','Juventud'];
+  const sumCols=['Planta','Total','Días totales','Iniciales','Subsecuentes','Maternidad','Riesgo trabajo'];
+  const sumRows=PLANTAS_LIST.map(p=>{
+    const pd=datos.filter(r=>normEq(r.planta,p));
+    return[p,pd.length,pd.reduce((s,r)=>s+(parseInt(r.incDias)||0),0),
+      pd.filter(r=>normInc(r.secuencia||'','inicial')||!r.secuencia).length,
+      pd.filter(r=>normInc(r.secuencia||'','subsec')).length,
+      pd.filter(r=>normInc(r.tipo||r.incapacidad||'','maternidad')).length,
+      pd.filter(r=>normInc(r.tipo||r.incapacidad||'','trabajo')).length];
+  });
+  sumRows.push(['TOTAL',datos.length,datos.reduce((s,r)=>s+(parseInt(r.incDias)||0),0),'','','','']);
+  const wsSum=XLSX.utils.aoa_to_sheet([sumCols,...sumRows]);
+  XLSX.utils.book_append_sheet(wb,wsSum,'Resumen');
+
+  const nombre=`Incapacidades_Semana${semana}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb,nombre);
+  toast('✅ Excel descargado: '+nombre,'ok');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
