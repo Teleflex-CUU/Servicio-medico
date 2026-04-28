@@ -4025,15 +4025,29 @@ function renderPastList(){
   const lista=CONS.filter(c=>{
     if(c.tipoCons!=='Pastilleo') return false;
     if(c.registradoPor!==USER.nombre) return false;
-    // Parse fecha
+    // Parse fecha — handles ISO, dd/mm/yyyy, yyyy-mm-dd
     const f=String(c.fecha||'');
     let dt=null;
     try{
-      if(f.includes('/')) dt=new Date(f.split('/').reverse().join('-')+'T'+(c.hora||'00:00')+':00');
-      else dt=new Date(f+'T'+(c.hora||'00:00')+':00');
+      if(f.includes('T')||f.includes('Z')){
+        // ISO format from Sheets: 2026-04-14T06:00:00.000Z
+        dt=new Date(f);
+      } else if(f.includes('/')){
+        // dd/mm/yyyy
+        const [d,m,y]=f.split('/');
+        dt=new Date(`${y}-${m}-${d}T12:00:00`);
+      } else if(f.includes('-')){
+        // yyyy-mm-dd
+        dt=new Date(f+'T12:00:00');
+      }
     }catch(e){}
-    return dt&&dt>=hace24;
-  }).sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));
+    return dt&&!isNaN(dt)&&dt>=hace24;
+  }).sort((a,b)=>{
+    // Sort by fecha desc
+    const fa=new Date(String(a.fecha||''));
+    const fb=new Date(String(b.fecha||''));
+    return fb-fa;
+  });
   const el=document.getElementById('past-list');
   const cnt=document.getElementById('past-count');
   if(cnt) cnt.textContent=lista.length;
@@ -4048,7 +4062,7 @@ function renderPastList(){
           ${c.diagnostico||'—'} → <span style="color:var(--tl);font-weight:600">${c.plan||'—'}</span>
           ${c.ta?`<span style="margin-left:8px;color:var(--rd)">T/A: ${c.ta}</span>`:''}
           ${c.glucosa?`<span style="margin-left:6px;color:var(--am)">Glu: ${c.glucosa}</span>`:''}
-          <span style="margin-left:8px;color:var(--tx3)">${c.hora||''}</span>
+          <span style="margin-left:8px;color:var(--tx3)">${fmtHoraPast(c.hora)}</span>
         </div>
       </div>
     </div>`).join('');
@@ -4407,6 +4421,29 @@ function registrarExterno(){
   }
 }
 
+
+
+function fmtHoraPast(hora){
+  if(!hora) return '';
+  const s=String(hora).trim();
+  // Already HH:MM
+  if(/^\d{1,2}:\d{2}$/.test(s)) return s;
+  // Excel serial date (1899-12-30T...)
+  if(s.includes('1899-12-30')||s.includes('1899-12-31')){
+    try{
+      const d=new Date(s);
+      return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+    }catch(e){}
+  }
+  // ISO
+  if(s.includes('T')){
+    try{
+      const d=new Date(s);
+      return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+    }catch(e){}
+  }
+  return s;
+}
 
 function fmtIncFecha(f){
   if(!f) return '—';
