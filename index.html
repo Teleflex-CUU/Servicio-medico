@@ -1971,7 +1971,11 @@ initDashSelects();
   const cs=document.getElementById('cap-sub');if(cs)cs.textContent='Busca al empleado para comenzar la captura';
 
   // Sync automático al inicio
-  syncAll();
+  syncAll().then(()=>{
+    // If pastilleo is active screen, refresh it
+    const scP=document.getElementById('sc-pastilleo');
+    if(scP&&scP.classList.contains('on')) renderPastilleoHoy();
+  });
 }
 function go(id){
   document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));
@@ -2044,8 +2048,12 @@ async function syncAll(silencioso){
       gasGet({action:'getInc'}),
       gasGet({action:'getCitas'})
     ]);
-    if(rCONS.ok&&Array.isArray(rCONS.data)){CONS=rCONS.data;sv(SK.cons,CONS);}
-    else errores++;
+    if(rCONS.ok&&Array.isArray(rCONS.data)){
+      CONS=rCONS.data;sv(SK.cons,CONS);
+      // Re-render pastilleo if visible
+      const scP=document.getElementById('sc-pastilleo');
+      if(scP&&scP.classList.contains('on')) renderPastilleoHoy();
+    } else errores++;
     if(rINC.ok&&Array.isArray(rINC.data)){INC=rINC.data;sv(SK.inc,INC);}
     else errores++;
     if(rCIT.ok&&Array.isArray(rCIT.data)){CITAS=rCIT.data;sv(SK.citas,CITAS);}
