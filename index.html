@@ -4087,11 +4087,15 @@ function renderPastList(){
   // KPIs
   const pacUnicos=new Set(lista.map(c=>String(c.noEmp))).size;
   const motivoCnt={};
+  const sistemaCnt={};
   lista.forEach(c=>{
     const m=(c.diagnostico||'Sin especificar').trim();
     motivoCnt[m]=(motivoCnt[m]||0)+1;
+    const s=clasificarDx(c.diagnostico);
+    sistemaCnt[s]=(sistemaCnt[s]||0)+1;
   });
   const topMotivos=Object.entries(motivoCnt).sort((a,b)=>b[1]-a[1]);
+  const topSistemas=Object.entries(sistemaCnt).sort((a,b)=>b[1]-a[1]);
   const maxM=topMotivos[0]?.[1]||1;
 
   // Render sistemas
