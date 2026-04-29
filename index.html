@@ -1209,8 +1209,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
         <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;font-weight:700">Motivo frecuente</div>
       </div>
     </div>
+    <!-- Por sistema -->
+    <div class="sec-t" style="margin-bottom:8px">Por aparato / sistema</div>
+    <div id="past-stat-sistemas" style="margin-bottom:14px"></div>
     <!-- Top motivos -->
-    <div class="sec-t" style="margin-bottom:8px">Motivos principales</div>
+    <div class="sec-t" style="margin-bottom:8px">Motivos / diagnósticos principales</div>
     <div id="past-stat-motivos"></div>
   </div>
 </div>
@@ -4066,6 +4069,7 @@ function renderPastList(){
       <div>
         <strong>${c.nombre}</strong>
         <span style="color:var(--tx3);margin-left:6px">No.${c.noEmp}</span>
+        <span style="margin-left:8px;font-size:10px;background:var(--sf3);padding:1px 6px;border-radius:6px;color:var(--tx2)">${getSistemaIcon(clasificarDx(c.diagnostico))} ${clasificarDx(c.diagnostico)}</span>
         <div style="color:var(--tx3);font-size:11px;margin-top:2px">
           ${c.diagnostico||'—'} → <span style="color:var(--tl);font-weight:600">${c.plan||'—'}</span>
           ${c.ta?`<span style="margin-left:8px;color:var(--rd)">T/A: ${c.ta}</span>`:''}
@@ -4089,6 +4093,21 @@ function renderPastList(){
   });
   const topMotivos=Object.entries(motivoCnt).sort((a,b)=>b[1]-a[1]);
   const maxM=topMotivos[0]?.[1]||1;
+
+  // Render sistemas
+  const sisEl=document.getElementById('past-stat-sistemas');
+  if(sisEl&&topSistemas){
+    const maxS=topSistemas[0]?.[1]||1;
+    sisEl.innerHTML=topSistemas.map(([sis,n])=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bor)">
+        <span style="min-width:22px;font-size:14px">${getSistemaIcon(sis)}</span>
+        <div style="flex:1;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sis}</div>
+        <div style="background:var(--sf3);border-radius:3px;height:7px;width:80px;flex-shrink:0">
+          <div style="height:100%;background:var(--tl);border-radius:3px;width:${Math.round(n/maxS*100)}%"></div>
+        </div>
+        <span style="font-size:11px;font-weight:800;min-width:18px;text-align:right">${n}</span>
+      </div>`).join('');
+  }
 
   const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   setEl('past-stat-total',lista.length);
@@ -4676,6 +4695,160 @@ function descargarIncSemanalExcel(){
   XLSX.writeFile(wb,nombre);
   toast('✅ Excel descargado: '+nombre,'ok');
 }
+
+
+// ════════════════════════════════════════════════════════════════
+// CLASIFICADOR DE DIAGNÓSTICOS POR APARATOS Y SISTEMAS
+// ════════════════════════════════════════════════════════════════
+
+const DX_SISTEMAS = {
+  'Musculoesquelético': [
+    'muscular','lumbalgia','cervicalgia','dorsalgia','contractura','esguince',
+    'epicondilitis','epitrocleitis','tendinitis','tenosinovitis','dedo en gatillo',
+    'tunel carpiano','fascitis','bursitis','condromalacia','desgarro','osteoartritis',
+    'gonartrosis','hernia de disco','ciatica','ciatralgia','lumbociatica','sinovitis',
+    'latigazo','escoliosis','ganglion','hallux','juanete','artritis','contusion',
+    'hombro doloroso','dolor hombro','dolor rodilla','dolor muñeca','dolor codo',
+    'dolor pie','dolor brazo','dolor dedo','dolor tobillo','dolor cervical','dolor lumbar',
+    'mialgias','mialgia','tension muscular','podalgia','nervio ciatico','reuma',
+    'artralgia','distension','costocondritis','sindrome tunel','osteoartritis',
+    'fascitis de la fascia','hallux valgus','artritis gotosa','adormecimiento',
+    'ardor manos','mialgias','dolor muscular'
+  ],
+  'Respiratorio': [
+    'rinofaringitis','resfrio','resfriado','faringitis','amigdalitis','sinusitis',
+    'rinitis','bronquitis','asma','crisis asmatica','neumonia','influenza','laringitis',
+    'traqueitis','epistaxis','cornetes','tabique','polipos nasales','neumoconiosis',
+    'epoc','pleuritis','derrame pleural','bronquiectasias','atelectasia','apnea',
+    'faringitis cronica','laringotraqueitis','tos cronica','hiperreactividad bronquial',
+    'micosis pulmonar','rinorea','rinorrea','afonia','odinofagia','tos seca',
+    'tos con flemas','tos con flema','nebulizacion','salbutamol','sat 90',
+    'ivr','congestion nasal','garganta irritada','irritacion en garganta','brunadol',
+    'broncolin','bicoestol','benzonatato','ambroxol','fexofenadina'
+  ],
+  'Digestivo': [
+    'gastritis','ulcera gastrica','ulcera duodenal','reflujo','erge','esofagitis',
+    'dispepsia','gastroenteritis','parasitosis','amebiasis','giardiasis','intestino irritable',
+    'colitis','estreñimiento','diarrea','hemorroides','fisura anal','diverticulosis',
+    'diverticulitis','colelitiasis','colecistitis','esteatosis hepatica','pancreatitis',
+    'hernia hiatal','hernia inguinal','hernia umbilical','insuficiencia hepatica',
+    'proctitis','candidiasis oral','glositis','estomatitis','intolerancia lactosa',
+    'celiaca','agruras','acidez','pirosis','nausea','nauseas','emesis','vomito',
+    'colicos','dolor abdominal','gastrocolitis','gepi','colitis funcional',
+    'dispepcia','espaven','omeprazol','biomesina','espaven','antifludes',
+    'pepto','loperamida','treda','plus gel','sal de uvas','esomeprazol',
+    'mal estar estomacal','mal star estomacal','flatulencia','distension abdominal'
+  ],
+  'Cardiovascular': [
+    'hipertension','hta','crisis hipertensiva','hipotension','varices','tromboflebitis',
+    'trombosis','angina','cardiopatia','insuficiencia cardiaca','arritmia',
+    'fibrilacion auricular','taquicardia','bradicardia','bloqueo de rama','soplo',
+    'pericarditis','valvulopatia','ateroesclerosis','enfermedad arterial','linfedema',
+    'edema','fenomeno de raynaud','telangiectasias','miocardiopatia','extrasistoles',
+    'hipertrofia ventricular','arteritis','flebitis','sindrome varicoso',
+    'chequeo t/a','chequeo de t/a','chequeo ta','tension arterial','presion alta',
+    'presion baja','ta alta','captopril','metamizol hipertension','nistagmo',
+    'diaforesis','sincope','lipotimia','chequeo tension','seguimiento t/a'
+  ],
+  'Neurológico': [
+    'cefalea','migrana','migraña','vertigo','sincope','lipotimia','nistagmo',
+    'vértigo paroxistico','cefalea tensional','migrana sin aura','adormecimiento',
+    'ardor manos','nervio ciatico','neuropatia','convulsion','epilepsia',
+    'mareo','desequilibrio','difenidol','bioelectro','bio electro',
+    'vertigo cefalea','cefalea vertigo','cefaelea','ceflaea'
+  ],
+  'Oftálmico': [
+    'conjuntivitis','ojo rojo','ojo irritado','ojos rojos','orzuelo','chalazion',
+    'derrame ocular','pterigio','terhigion','queratitis','uveitis',
+    'conjuntivitis alergica','conjuntivitis bacteriana','nazil','nafazolina',
+    'dexne','hipromelosa','alin oftalmologico','iritacion ocular','ojos'
+  ],
+  'ORL - Oído Nariz Garganta': [
+    'otalgia','otitis','tapón de cerumen','tapón de cerumen','cuerpo extraño oido',
+    'odontalgia','afta','herpes bucal','herpes labial','glositis',
+    'dolor de garganta','soldrim','soldrin','oticare','peroxido'
+  ],
+  'Dermatológico e Infeccioso': [
+    'dermatitis','urticaria','prurigo','tinea','pie de atleta','onicomicosis',
+    'candidiasis','psoriasis','acne','rosácea','impetigo','foliculitis',
+    'furunculosis','absceso','celulitis infecciosa','erisipela','escabiosis','sarna',
+    'herpes simple','herpes zoster','verruga','mezquino','molusco','queratosis',
+    'alopecia','vitiligo','quemadura solar','melasma','pitiriasis','dishidrosis',
+    'eccema','herida','quemadura','curacion','curita','herpes','abseso',
+    'rash','rash cutaneo','rash alergico','prurito','picadura','piquete',
+    'piquete avispa','piquete garrapata','piquete insecto','reaccion alergica',
+    'alergia estacional','rinitis alergica','andantol','gelmicin','loratadina',
+    'cetirizina','fexofenadina','aciclovir','sulfadiazina'
+  ],
+  'Metabólico y Endócrino': [
+    'diabetes','resistencia insulina','prediabetes','hipoglucemia','hipoglicemia',
+    'hiperglucemia','hiperglicemia','obesidad','sobrepeso','hipercolesterolemia',
+    'hipertrigliceridemia','dislipidemia','hiperuricemia','acido urico','hipotiroidismo',
+    'hipertiroidismo','sindrome metabolico','vitamina d','anemia','ferropenia',
+    'glucosa','chequeo glucosa','dtx','dxt','glicemia','metformina','insulina',
+    'olvido de tratamiento','olvido tx'
+  ],
+  'Urinario e Infeccioso': [
+    'infeccion vias urinarias','ivu','cistitis','balanitis','vaginitis',
+    'ivp','urezol','azogen','fenazopiridina','hematuria','disuria'
+  ],
+  'Ginecológico y Reproductivo': [
+    'dismenorrea','colicos menstruales','amenorrea','menorragia','ovario',
+    'embarazo','maternidad','lactancia','ts','toalla sanitaria',
+    'anticonceptivo','anticonceptivos','doltrix','prestodol','butil'
+  ],
+  'Psicosocial': [
+    'estres','ansiedad','crisis de ansiedad','burnout','depresion',
+    'insomnio','sindrome burnout','trastorno ansiedad','episodio depresivo',
+    'vivinox','somnolencia','fatiga','adinamia','astenia','cansancio'
+  ],
+  'Preventivo y Procedimientos': [
+    'aplicacion tx','aplicacion de tx','aplicacion de tratamiento','inyectable',
+    'chequeo','seguimiento','control','pase de salida','envio imss','envio a imss',
+    'ceftriaxona','tribedoce','complejo b','vitamina c','berocca','gelcavit',
+    'fortical','caridoxen','tb12','gelcavit','rocavit','adriphel'
+  ],
+  'Traumatología y Urgencias': [
+    'caida','golpe','traumatismo','politraumatismo','policontundida','contusion',
+    'fractura','luxacion','accidente','herida cortante','herida punzante',
+    'torniquete','urgencia','emergencia','oxigeno','oxigenoterapia',
+    'accidente de trabajo','accidente trayecto'
+  ]
+};
+
+function clasificarDx(diagnostico){
+  if(!diagnostico) return 'Sin clasificar';
+  const dx = String(diagnostico).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const [sistema, keywords] of Object.entries(DX_SISTEMAS)){
+    for(const kw of keywords){
+      if(dx.includes(kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')))
+        return sistema;
+    }
+  }
+  return 'Sin clasificar';
+}
+
+// Emoji icon per system
+const SISTEMA_ICON = {
+  'Musculoesquelético':       '🦴',
+  'Respiratorio':             '🫁',
+  'Digestivo':                '🍽️',
+  'Cardiovascular':           '🫀',
+  'Neurológico':              '🧠',
+  'Oftálmico':                '👁️',
+  'ORL - Oído Nariz Garganta':'👂',
+  'Dermatológico e Infeccioso':'🦠',
+  'Metabólico y Endócrino':   '🧬',
+  'Urinario e Infeccioso':    '💧',
+  'Ginecológico y Reproductivo':'🩸',
+  'Psicosocial':              '😰',
+  'Preventivo y Procedimientos':'💉',
+  'Traumatología y Urgencias':'🚑',
+  'Sin clasificar':           '❓'
+};
+
+function getSistemaIcon(sistema){ return SISTEMA_ICON[sistema]||'❓'; }
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
