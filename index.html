@@ -4853,6 +4853,7 @@ const DX_SISTEMAS = {
     'ceftriaxona','tribedoce','complejo b','vitamina c','berocca','gelcavit',
     'fortical','caridoxen','tb12','gelcavit','rocavit','adriphel'
   ],
+  'Otros': [],
   'Traumatología y Urgencias': [
     'caida','golpe','traumatismo','politraumatismo','policontundida','contusion',
     'fractura','luxacion','accidente','herida cortante','herida punzante',
@@ -4890,6 +4891,7 @@ const SISTEMA_ICON = {
   'Psicosocial':              '😰',
   'Preventivo y Procedimientos':'💉',
   'Traumatología y Urgencias':'🚑',
+  'Otros':                    '📌',
   'Sin clasificar':           '❓'
 };
 
@@ -4955,7 +4957,7 @@ function renderClasificador(){
   // Filter
   const filtro = g('cl-filtro')||'sin';
   const q = norm(g('cl-q')||'');
-  let lista = filtro==='sin'?[...sinClasif,...clasificados]:
+  let lista = filtro==='sin'?sinClasif:
               filtro==='custom'?custom:todos;
   if(q) lista = lista.filter(d=>norm(d.dx).includes(q));
 
@@ -4967,7 +4969,7 @@ function renderClasificador(){
     return;
   }
 
-  const sistemas = Object.keys(DX_SISTEMAS).concat(['Sin clasificar']);
+  const sistemas = Object.keys(DX_SISTEMAS).concat(['Otros','Sin clasificar']);
 
   el.innerHTML = lista.map(d=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${d.sistema==='Sin clasificar'?'var(--sf3)':'var(--bg)'};border:1.5px solid ${d.sistema==='Sin clasificar'?'var(--rd)':'var(--bor)'};flex-wrap:wrap">
@@ -4992,8 +4994,14 @@ function renderClasificador(){
 }
 
 function aplicarReglaDx(dx, sistema){
-  saveCustomRule(dx, sistema);
-  toast('✅ Regla guardada: '+dx.slice(0,30)+' → '+sistema,'ok');
+  if(sistema==='Sin clasificar'){
+    // Remove rule if setting back to unclassified
+    saveCustomRule(dx, '__delete__');
+    toast('Regla eliminada','ok');
+  } else {
+    saveCustomRule(dx, sistema);
+    toast('✅ '+dx.slice(0,25)+' → '+sistema,'ok');
+  }
   renderClasificador();
 }
 
