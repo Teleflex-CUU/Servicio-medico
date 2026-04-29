@@ -4110,7 +4110,7 @@ function renderPastList(){
       <div>
         <strong>${c.nombre}</strong>
         <span style="color:var(--tx3);margin-left:6px">No.${c.noEmp}</span>
-        <span style="margin-left:8px;font-size:10px;background:var(--sf3);padding:1px 6px;border-radius:6px;color:var(--tx2)">${getSistemaIcon(clasificarDx(c.diagnostico))} ${clasificarDx(c.diagnostico)}</span>
+        <span style="margin-left:8px;font-size:10px;background:var(--sf3);padding:1px 6px;border-radius:6px;color:var(--tx2)">${getSistemaIcon(clasificarDxConReglas(c.diagnostico))} ${clasificarDxConReglas(c.diagnostico)}</span>
         <div style="color:var(--tx3);font-size:11px;margin-top:2px">
           ${c.diagnostico||'—'} → <span style="color:var(--tl);font-weight:600">${c.plan||'—'}</span>
           ${c.ta?`<span style="margin-left:8px;color:var(--rd)">T/A: ${c.ta}</span>`:''}
@@ -4132,7 +4132,7 @@ function renderPastList(){
   lista.forEach(c=>{
     const m=(c.diagnostico||'Sin especificar').trim();
     motivoCnt[m]=(motivoCnt[m]||0)+1;
-    const s=clasificarDx(c.diagnostico);
+    const s=clasificarDxConReglas(c.diagnostico);
     sistemaCnt[s]=(sistemaCnt[s]||0)+1;
   });
   const topMotivos=Object.entries(motivoCnt).sort((a,b)=>b[1]-a[1]);
@@ -4917,20 +4917,16 @@ function saveCustomRule(dx, sistema){
   localStorage.setItem(SK_DX_RULES, JSON.stringify(rules));
 }
 
-// Override clasificarDx to check custom rules first
-const _clasificarDxBase = clasificarDx;
-function clasificarDx(diagnostico){
+// Wrapper that checks custom rules first, then base classifier
+function clasificarDxConReglas(diagnostico){
   if(!diagnostico) return 'Sin clasificar';
   const rules = getCustomRules();
   const key = norm(diagnostico);
-  // Check exact match in custom rules
   if(rules[key]) return rules[key];
-  // Check partial match in custom rules
   for(const [k,v] of Object.entries(rules)){
     if(key.includes(k)||k.includes(key)) return v;
   }
-  // Fall back to base classifier
-  return _clasificarDxBase(diagnostico);
+  return clasificarDx(diagnostico);
 }
 
 function renderClasificador(){
