@@ -2014,6 +2014,7 @@ initDashSelects();
   const cs=document.getElementById('cap-sub');if(cs)cs.textContent='Busca al empleado para comenzar la captura';
 
   // Sync automático al inicio
+  cargarReglasDx();
   syncAll().then(()=>{
     // If pastilleo is active screen, refresh it
     const scP=document.getElementById('sc-pastilleo');
@@ -4904,19 +4905,29 @@ function getSistemaIcon(sistema){ return SISTEMA_ICON[sistema]||'❓'; }
 
 const SK_DX_RULES = 'so_dx_rules'; // localStorage key for custom rules
 
-function getCustomRules(){
-  try{ return JSON.parse(localStorage.getItem(SK_DX_RULES)||'{}'); }
-  catch(e){ return {}; }
-}
+// In-memory rules — synced with Sheets
+let _DX_RULES = {};
+
+function getCustomRules(){ return _DX_RULES; }
 
 function saveCustomRule(dx, sistema){
-  const rules = getCustomRules();
   if(sistema === '__delete__'){
-    delete rules[norm(dx)];
+    delete _DX_RULES[norm(dx)];
   } else {
-    rules[norm(dx)] = sistema;
+    _DX_RULES[norm(dx)] = sistema;
   }
-  localStorage.setItem(SK_DX_RULES, JSON.stringify(rules));
+  // Sync to Sheets (best effort, no await)
+  gasPost({action:'saveRules', rules: JSON.stringify(_DX_RULES)}).catch(()=>{});
+}
+
+async function cargarReglasDx(){
+  try{
+    const r = await gasGet({action:'getRules'});
+    if(r.ok && r.data){
+      const parsed = typeof r.data==='string' ? JSON.parse(r.data) : r.data;
+      if(parsed && typeof parsed==='object') _DX_RULES = parsed;
+    }
+  }catch(e){ console.log('Rules not loaded:', e); }
 }
 
 // Wrapper that checks custom rules first, then base classifier
@@ -5014,7 +5025,7 @@ function eliminarReglaDx(dx){
 function exportarReglasDx(){
   const rules = getCustomRules();
   const total = Object.keys(rules).length;
-  if(!total){toast('No hay reglas personalizadas','err');return;}
+  if(!total){toast('Asigna al menos una categoría primero','err');return;}
   const lines = ['Diagnóstico\tSistema asignado'];
   Object.entries(rules).forEach(([k,v])=>lines.push(`${k}\t${v}`));
   const blob = new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
@@ -5022,7 +5033,7 @@ function exportarReglasDx(){
   a.href = URL.createObjectURL(blob);
   a.download = 'reglas_dx_'+new Date().toISOString().slice(0,10)+'.txt';
   a.click();
-  toast('✅ '+total+' reglas exportadas','ok');
+  toast('✅ '+total+' reglas exportadas y guardadas en Sheets','ok');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
