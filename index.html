@@ -5251,7 +5251,7 @@ function renderAntidoping(){
   if(!lista.length){el.innerHTML='<div class="empty"><div class="empty-i">🧪</div>Sin registros de antidoping</div>';return;}
 
   const SUST = ['thc','opiáceos','anfetaminas','metanfetaminas','cocaina','benzodiacepinas'];
-  const SUST_LABEL = {'thc':'THC','opiáceos':'Opiáceos','anfetaminas':'Anfetaminas','metanfetaminas':'Metanfetaminas','cocaina':'Cocaína','benzodiacepinas','Benzodiacepinas'};
+  const SUST_LABEL = {'thc':'THC','opiáceos':'Opiáceos','anfetaminas':'Anfetaminas','metanfetaminas':'Metanfetaminas','cocaina':'Cocaína','benzodiacepinas':'Benzodiacepinas'};
   el.innerHTML = lista.map(r=>{
     const pos = SUST.filter(s=>r[s]==='Positivo');
     const esPos = pos.length>0;
