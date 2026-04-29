@@ -1563,6 +1563,45 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <div id="usr-list"></div>
 </div>
 
+
+<!-- ═══ CLASIFICADOR DX ═══ -->
+<div class="sc" id="sc-clasificador">
+  <div class="sh2">
+    <div>
+      <h2>🧠 Clasificador de Diagnósticos</h2>
+      <p style="font-size:12px;color:var(--tx3)">Entrena el sistema asignando aparatos/sistemas a diagnósticos no reconocidos</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-gh btn-sm" onclick="renderClasificador()">🔄 Actualizar</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="exportarReglasDx()">📥 Exportar reglas</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" style="margin-bottom:14px">
+    <div class="kpi tl"><div class="kv" id="cl-total">0</div><div class="kl">Diagnósticos únicos</div></div>
+    <div class="kpi gr"><div class="kv" id="cl-clasificados">0</div><div class="kl">Clasificados</div></div>
+    <div class="kpi rd"><div class="kv" id="cl-sin">0</div><div class="kl">Sin clasificar</div></div>
+    <div class="kpi am"><div class="kv" id="cl-custom">0</div><div class="kl">Reglas personalizadas</div></div>
+  </div>
+
+  <!-- Filtro -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="cl-filtro" onchange="renderClasificador()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--bor);font-size:13px;font-family:inherit;outline:none;background:var(--bg);color:var(--tx)">
+      <option value="sin">Sin clasificar primero</option>
+      <option value="todos">Todos los diagnósticos</option>
+      <option value="custom">Solo reglas personalizadas</option>
+    </select>
+    <div class="sw" style="flex:1;max-width:300px">
+      <span class="si">🔍</span>
+      <input type="text" id="cl-q" placeholder="Buscar diagnóstico..." oninput="renderClasificador()">
+    </div>
+  </div>
+
+  <!-- Lista de diagnósticos -->
+  <div id="cl-list"></div>
+</div>
+
 <!-- ═══ HEAD COUNT ═══ -->
 <div class="sc" id="sc-hc">
   <div class="sh2">
@@ -1931,6 +1970,7 @@ const allTabs = [
   {id:'citas',icon:'📅',label:'Citas',roles:['medico','enfermeria']},
   {id:'dash',icon:'📊',label:'Dashboard',roles:['medico']},
   {id:'usr',icon:'👥',label:'Usuarios',roles:['medico']},
+  {id:'clasificador',icon:'🧠',label:'Clasificador Dx',roles:['medico']},
   {id:'pastilleo',icon:'💊',label:'Pastilleo',roles:['enfermeria']},
   {id:'hc',icon:'📂',label:'Head Count',roles:['medico','enfermeria']},
 ];
@@ -1999,6 +2039,7 @@ function go(id){
   if(id==='dash') renderDash();
   if(id==='pastilleo'){limpiarPastilleo();renderPastilleoHoy();}
   if(id==='usr') renderUsuarios();
+  if(id==='clasificador') renderClasificador();
   if(id==='hc'){
     if(HC.length){
       document.getElementById('hc-upload').style.display='none';
@@ -4853,6 +4894,132 @@ const SISTEMA_ICON = {
 };
 
 function getSistemaIcon(sistema){ return SISTEMA_ICON[sistema]||'❓'; }
+
+
+// ════════════════════════════════════════════════════════════════
+// CLASIFICADOR DX — MÓDULO DE ENTRENAMIENTO (MÉDICO)
+// ════════════════════════════════════════════════════════════════
+
+const SK_DX_RULES = 'so_dx_rules'; // localStorage key for custom rules
+
+function getCustomRules(){
+  try{ return JSON.parse(localStorage.getItem(SK_DX_RULES)||'{}'); }
+  catch(e){ return {}; }
+}
+
+function saveCustomRule(dx, sistema){
+  const rules = getCustomRules();
+  if(sistema === '__delete__'){
+    delete rules[norm(dx)];
+  } else {
+    rules[norm(dx)] = sistema;
+  }
+  localStorage.setItem(SK_DX_RULES, JSON.stringify(rules));
+}
+
+// Override clasificarDx to check custom rules first
+const _clasificarDxBase = clasificarDx;
+function clasificarDx(diagnostico){
+  if(!diagnostico) return 'Sin clasificar';
+  const rules = getCustomRules();
+  const key = norm(diagnostico);
+  // Check exact match in custom rules
+  if(rules[key]) return rules[key];
+  // Check partial match in custom rules
+  for(const [k,v] of Object.entries(rules)){
+    if(key.includes(k)||k.includes(key)) return v;
+  }
+  // Fall back to base classifier
+  return _clasificarDxBase(diagnostico);
+}
+
+function renderClasificador(){
+  // Get all unique diagnoses from CONS
+  const dxMap = {};
+  CONS.forEach(c=>{
+    if(!c.diagnostico) return;
+    const dx = c.diagnostico.trim();
+    if(!dxMap[dx]) dxMap[dx] = {dx, count:0, sistema: clasificarDx(dx), custom: !!getCustomRules()[norm(dx)]};
+    dxMap[dx].count++;
+  });
+
+  const rules = getCustomRules();
+  const todos = Object.values(dxMap).sort((a,b)=>b.count-a.count);
+  const sinClasif = todos.filter(d=>d.sistema==='Sin clasificar');
+  const clasificados = todos.filter(d=>d.sistema!=='Sin clasificar');
+  const custom = todos.filter(d=>d.custom);
+
+  // KPIs
+  const setK=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setK('cl-total', todos.length);
+  setK('cl-clasificados', clasificados.length);
+  setK('cl-sin', sinClasif.length);
+  setK('cl-custom', Object.keys(rules).length);
+
+  // Filter
+  const filtro = g('cl-filtro')||'sin';
+  const q = norm(g('cl-q')||'');
+  let lista = filtro==='sin'?[...sinClasif,...clasificados]:
+              filtro==='custom'?custom:todos;
+  if(q) lista = lista.filter(d=>norm(d.dx).includes(q));
+
+  const el = document.getElementById('cl-list');
+  if(!el) return;
+  if(!lista.length){
+    el.innerHTML='<div class="empty"><div class="empty-i">🧠</div>' +
+      (filtro==='sin'&&!q?'¡Todos los diagnósticos están clasificados! 🎉':'Sin resultados') + '</div>';
+    return;
+  }
+
+  const sistemas = Object.keys(DX_SISTEMAS).concat(['Sin clasificar']);
+
+  el.innerHTML = lista.map(d=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${d.sistema==='Sin clasificar'?'var(--sf3)':'var(--bg)'};border:1.5px solid ${d.sistema==='Sin clasificar'?'var(--rd)':'var(--bor)'};flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700;font-size:13px">${d.dx}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:2px">
+          ${d.count} consulta${d.count!==1?'s':''} · 
+          <span style="color:${d.sistema==='Sin clasificar'?'var(--rd)':'var(--tl)'};font-weight:600">
+            ${getSistemaIcon(d.sistema)} ${d.sistema}
+          </span>
+          ${d.custom?'<span style="background:var(--am);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px">REGLA</span>':''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <select onchange="aplicarReglaDx('${d.dx.replace(/'/g,"\'")}',this.value)" 
+          style="padding:6px 10px;border-radius:7px;border:1.5px solid var(--bor);font-size:12px;font-family:inherit;outline:none;background:var(--bg);color:var(--tx);max-width:220px">
+          ${sistemas.map(s=>`<option value="${s}" ${s===d.sistema?'selected':''}>${getSistemaIcon(s)} ${s}</option>`).join('')}
+        </select>
+        ${d.custom?`<button class="btn btn-gh btn-xs" title="Eliminar regla" onclick="eliminarReglaDx('${d.dx.replace(/'/g,"\'")}')">✕</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function aplicarReglaDx(dx, sistema){
+  saveCustomRule(dx, sistema);
+  toast('✅ Regla guardada: '+dx.slice(0,30)+' → '+sistema,'ok');
+  renderClasificador();
+}
+
+function eliminarReglaDx(dx){
+  saveCustomRule(dx, '__delete__');
+  toast('Regla eliminada','ok');
+  renderClasificador();
+}
+
+function exportarReglasDx(){
+  const rules = getCustomRules();
+  const total = Object.keys(rules).length;
+  if(!total){toast('No hay reglas personalizadas','err');return;}
+  const lines = ['Diagnóstico\tSistema asignado'];
+  Object.entries(rules).forEach(([k,v])=>lines.push(`${k}\t${v}`));
+  const blob = new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'reglas_dx_'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click();
+  toast('✅ '+total+' reglas exportadas','ok');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
