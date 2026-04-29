@@ -4934,7 +4934,7 @@ function renderClasificador(){
   const dxMap = {};
   CONS.forEach(c=>{
     if(!c.diagnostico) return;
-    const dx = c.diagnostico.trim();
+    const dx = String(c.diagnostico||'').trim();
     if(!dxMap[dx]) dxMap[dx] = {dx, count:0, sistema: clasificarDx(dx), custom: !!getCustomRules()[norm(dx)]};
     dxMap[dx].count++;
   });
