@@ -1194,7 +1194,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       <div class="sec-t" style="margin:0">📊 Estadística del día</div>
       <span id="past-stats-turno" style="font-size:11px;color:var(--tx3)"></span>
     </div>
-    <!-- KPIs -->
+    <!-- Botones descarga -->
+  <div id="dash-dl-btns" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
+  <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
       <div style="background:var(--sf3);border-radius:8px;padding:10px;text-align:center;border-left:3px solid var(--tl)">
         <div id="past-stat-total" style="font-size:24px;font-weight:900;color:var(--tl);font-family:monospace">0</div>
@@ -3370,10 +3372,6 @@ function renderDash(){
       const trend=linReg(mTot);
       ds.push({label:'Tendencia',data:trend,type:'line',borderColor:'#DC2626',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false});
     }
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <button class="btn" onclick="descargarReporte()">📥 Reporte PDF</button>
-  <button class="btn" style="background:#0D6B5E" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
-</div>
     document.getElementById('dash-chart-title').textContent='Consultas por mes — '+anio;
   } else if(per==='mes'){
     const diasEnMes=new Date(anio,mes||new Date().getMonth()+1,0).getDate();
@@ -3503,6 +3501,12 @@ function renderDash(){
       <div class="kpi am" style="margin:0"><div class="kv">${diasTotal}</div><div class="kl">Días totales</div></div>
       <div class="kpi" style="margin:0;border-left:3px solid var(--pu)"><div class="kv" style="color:var(--pu)">${prolongadas}</div><div class="kl">Prolongadas +28d</div></div>
     </div>`;
+
+  // ── Botones de descarga ───────────────────────────────────────
+  const dlBtns=document.getElementById('dash-dl-btns');
+  if(dlBtns) dlBtns.innerHTML=`
+    <button class="btn btn-gh btn-sm" onclick="descargarReporte()">📥 Reporte PDF</button>
+    <button class="btn btn-sm" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>`;
 }
 
 
