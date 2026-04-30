@@ -3370,6 +3370,10 @@ function renderDash(){
       const trend=linReg(mTot);
       ds.push({label:'Tendencia',data:trend,type:'line',borderColor:'#DC2626',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false});
     }
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <button class="btn" onclick="descargarReporte()">📥 Reporte PDF</button>
+  <button class="btn" style="background:#0D6B5E" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
+</div>
     document.getElementById('dash-chart-title').textContent='Consultas por mes — '+anio;
   } else if(per==='mes'){
     const diasEnMes=new Date(anio,mes||new Date().getMonth()+1,0).getDate();
