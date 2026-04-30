@@ -5595,8 +5595,8 @@ function generarReporteEjecutivoExcel(){
         const datos=sistByPM[si][pi];
         const tot=datos.reduce((a,b)=>a+b,0);
         rows.push([pi===0?s.label:'', pi===0?sistTot:'', p,...datos,tot]);
-        if(pi===0) merges.push({s:{r,c:0},e:{r+3,c:0}});
-        if(pi===0) merges.push({s:{r,c:1},e:{r+3,c:1}});
+        if(pi===0) merges.push({s:{r:r,c:0},e:{r:r+3,c:0}});
+        if(pi===0) merges.push({s:{r:r,c:1},e:{r:r+3,c:1}});
         r++;
       });
     });
