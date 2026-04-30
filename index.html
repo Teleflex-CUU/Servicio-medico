@@ -1417,7 +1417,8 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       </div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-gh btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="syncAll().then(()=>renderDash())">🔄 Actualizar</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="descargarReporte()">📥 Descargar reporte</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="descargarReporte()">📥 Reporte PDF</button>
+        <button class="btn btn-sm" style="background:rgba(13,107,94,.8);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
       </div>
     </div>
     <!-- Filtros en grid -->
@@ -5405,6 +5406,280 @@ function exportarVales(){
   XLSX.utils.book_append_sheet(wb,ws,'Vales');
   XLSX.writeFile(wb,'Vales_Comida_'+new Date().toISOString().slice(0,10)+'.xlsx');
   toast('✅ Excel descargado','ok');
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// REPORTE EJECUTIVO MENSUAL — EXCEL
+// ════════════════════════════════════════════════════════════════
+function generarReporteEjecutivoExcel(){
+  if(typeof XLSX==='undefined'){toast('Librería Excel no disponible','err');return;}
+
+  const mesActual = parseInt(document.getElementById('da-mes')?.value||new Date().getMonth()+1);
+  const anioActual = parseInt(document.getElementById('da-anio')?.value||new Date().getFullYear());
+  const plantaFiltro = document.getElementById('da-planta')?.value||'';
+  const MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const MESES_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const PLANTAS = ['Barrancas','Juventud','Cantera','Américas'];
+  const PLANTAS_COD = ['BAR','JUV','CAN','AME'];
+
+  // ── Filter CONS by year ──────────────────────────────────────
+  let cons = CONS.filter(c=>(parseInt(c.anio)||0)===anioActual);
+  if(plantaFiltro) cons = cons.filter(c=>normEq(c.planta,plantaFiltro));
+
+  // ── Helper: count by planta and mes ─────────────────────────
+  const byPlantaMes = (arr, fn) => {
+    return PLANTAS.map(p=>{
+      return Array(12).fill(0).map((_,mi)=>{
+        return arr.filter(r=>normEq(r.planta,p)&&(parseInt(r.mesNum||0)-1)===mi&&fn(r)).length;
+      });
+    });
+  };
+
+  // ── Count consultas by planta/turno/mes ──────────────────────
+  const TURNOS = ['Matutino','Vespertino','Tiempo extra'];
+  const consByPT = PLANTAS.map(p=>
+    TURNOS.map(t=>
+      Array(12).fill(0).map((_,mi)=>
+        cons.filter(c=>normEq(c.planta,p)&&normEq(c.turno,t)&&(parseInt(c.mesNum||0)-1)===mi).length
+      )
+    )
+  );
+
+  // ── Incapacidades ────────────────────────────────────────────
+  const incByPM_prol = byPlantaMes(INC, r=>(parseInt(r.incDias)||0)>=28);
+  const incByPM_mat  = byPlantaMes(INC, r=>normInc(r.tipo||r.incapacidad||'','maternidad'));
+  const incByPM_dias = PLANTAS.map(p=>
+    Array(12).fill(0).map((_,mi)=>
+      INC.filter(r=>normEq(r.planta,p)&&(parseInt(r.mesNum||new Date(String(r.fecha)).getMonth()+1||0)-1)===mi)
+         .reduce((s,r)=>s+(parseInt(r.incDias)||0),0)
+    )
+  );
+  const incByPM_acc = byPlantaMes(INC, r=>normInc(r.tipo||r.incapacidad||'','trabajo')||normInc(r.tipo||r.incapacidad||'','trayecto'));
+
+  // ── Motivos por sistema ──────────────────────────────────────
+  const SISTEMAS = [
+    {key:'Neurológico',        label:'NEUROLOGICO'},
+    {key:'Oftálmico',          label:'OFTALMICO'},
+    {key:'ORL - Oído Nariz Garganta', label:'ORL / ODONTOLOGICO'},
+    {key:'Respiratorio',       label:'ENF RESPIRATORIA'},
+    {key:'Digestivo',          label:'GASTROINTESTINAL'},
+    {key:'Urinario e Infeccioso',label:'URINARIO'},
+    {key:'Ginecológico y Reproductivo',label:'GINECOLOGICO'},
+    {key:'Dermatológico e Infeccioso',label:'DERMATOLOGICO'},
+    {key:'Musculoesquelético', label:'MUSCULOESQUELETICO'},
+    {key:'Psicosocial',        label:'FATIGA / ESTRES'},
+    {key:'Traumatología y Urgencias',label:'TRAUMATOLOGIA'},
+    {key:'Cardiovascular',     label:'CARDIOVASCULAR'},
+    {key:'Preventivo y Procedimientos',label:'PREVENTIVO'},
+    {key:'Metabólico y Endócrino',label:'METABOLICO'},
+    {key:'Otros',              label:'OTROS'},
+  ];
+
+  const sistByPM = SISTEMAS.map(s=>
+    PLANTAS.map(p=>
+      Array(12).fill(0).map((_,mi)=>
+        cons.filter(c=>
+          normEq(c.planta,p)&&
+          (parseInt(c.mesNum||0)-1)===mi&&
+          clasificarDxConReglas(c.diagnostico||c.motivoConsulta||'')===s.key
+        ).length
+      )
+    )
+  );
+
+  // ══════════════════════════════════════════════════════════════
+  // BUILD WORKBOOK
+  // ══════════════════════════════════════════════════════════════
+  const wb = XLSX.utils.book_new();
+
+  // ── Styles helper ─────────────────────────────────────────────
+  const mkStyle = (opts={}) => {
+    const s = {
+      font:{name:'Arial',sz:opts.sz||9,bold:!!opts.bold,color:{rgb:opts.color||'0F172A'}},
+      alignment:{horizontal:opts.align||'center',vertical:'center',wrapText:!!opts.wrap},
+    };
+    if(opts.bg) s.fill={patternType:'solid',fgColor:{rgb:opts.bg}};
+    if(opts.border) s.border={top:{style:'thin',color:{rgb:'CBD5E1'}},bottom:{style:'thin',color:{rgb:'CBD5E1'}},left:{style:'thin',color:{rgb:'CBD5E1'}},right:{style:'thin',color:{rgb:'CBD5E1'}}};
+    return s;
+  };
+
+  const HDR_DARK  = {bg:'0F2942',color:'FFFFFF',bold:true,border:true};
+  const HDR_TEAL  = {bg:'0D6B5E',color:'FFFFFF',bold:true,border:true};
+  const HDR_RED   = {bg:'DC2626',color:'FFFFFF',bold:true,border:true};
+  const HDR_GOLD  = {bg:'B8962E',color:'FFFFFF',bold:true,border:true};
+  const HDR_BLUE  = {bg:'1D4ED8',color:'FFFFFF',bold:true,border:true};
+  const HDR_GR    = {bg:'166534',color:'FFFFFF',bold:true,border:true};
+  const ROW_A     = {bg:'F1F5F9',color:'0F172A',border:true};
+  const ROW_B     = {bg:'FFFFFF',color:'0F172A',border:true};
+  const TOT_STYLE = {bg:'0D6B5E',color:'FFFFFF',bold:true,border:true};
+
+  // ── Sheet builder helper ──────────────────────────────────────
+  const makeSheet = (data) => {
+    const ws = XLSX.utils.aoa_to_sheet(data.rows);
+    ws['!cols'] = data.cols||[];
+    ws['!merges'] = data.merges||[];
+    // Apply styles (xlsx doesn't support styles natively in free version — use values only)
+    return ws;
+  };
+
+  // ── SHEET 1: MÉTRICAS ─────────────────────────────────────────
+  const buildMetricas = () => {
+    const rows = [];
+    const merges = [];
+    let r = 0;
+
+    const titulo = [`REPORTE EJECUTIVO — SALUD OCUPACIONAL TELEFLEX | ${anioActual}`, ...Array(15).fill('')];
+    rows.push(titulo);
+    merges.push({s:{r:0,c:0},e:{r:0,c:15}});
+    r++;
+
+    rows.push([`Planta: ${plantaFiltro||'Todas'} | Período: ${anioActual} | Generado: ${new Date().toLocaleDateString('es-MX')}`, ...Array(15).fill('')]);
+    merges.push({s:{r:1,c:0},e:{r:1,c:15}});
+    r++;
+    rows.push(Array(16).fill(''));r++;
+
+    const seccion = (titulo_s, datos, hdrStyle) => {
+      rows.push([titulo_s,...Array(15).fill('')]);
+      merges.push({s:{r,c:0},e:{r,c:15}});
+      r++;
+      rows.push(['PLANTA',...MESES_EN,'TOTAL']);r++;
+      datos.forEach((plantaDatos,pi)=>{
+        const tot = plantaDatos.reduce((a,b)=>a+b,0);
+        rows.push([PLANTAS[pi],...plantaDatos,tot]);r++;
+      });
+      const totals = Array(12).fill(0).map((_,mi)=>datos.reduce((s,pd)=>s+pd[mi],0));
+      rows.push(['TOTAL MENSUAL',...totals,totals.reduce((a,b)=>a+b,0)]);r++;
+      rows.push(Array(16).fill(''));r++;
+    };
+
+    seccion('INCAPACIDADES PROLONGADAS >28D', incByPM_prol);
+    seccion('INCAPACIDADES — MATERNIDAD', incByPM_mat);
+    seccion('DÍAS PERDIDOS POR INCAPACIDAD', incByPM_dias);
+    seccion('1RA ATENCIÓN POR ACCIDENTE / INCIDENTE', incByPM_acc);
+
+    // Consultas por planta/turno
+    rows.push(['CONSULTAS MENSUALES POR PLANTA Y TURNO',...Array(15).fill('')]);
+    merges.push({s:{r,c:0},e:{r,c:15}});r++;
+    rows.push(['PLANTA','TURNO',...MESES_EN,'TOTAL']);r++;
+    PLANTAS.forEach((p,pi)=>{
+      TURNOS.forEach((t,ti)=>{
+        const datos=consByPT[pi][ti];
+        const tot=datos.reduce((a,b)=>a+b,0);
+        rows.push([p,t,...datos,tot]);r++;
+      });
+      const sumT=Array(12).fill(0).map((_,mi)=>TURNOS.reduce((s,_,ti)=>s+consByPT[pi][ti][mi],0));
+      rows.push([p,'SUBTOTAL',...sumT,sumT.reduce((a,b)=>a+b,0)]);r++;
+    });
+    const grandT=Array(12).fill(0).map((_,mi)=>PLANTAS.reduce((s,_,pi)=>s+TURNOS.reduce((ss,_,ti)=>ss+consByPT[pi][ti][mi],0),0));
+    rows.push(['TOTAL MENSUAL','',...grandT,grandT.reduce((a,b)=>a+b,0)]);r++;
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = merges;
+    ws['!cols'] = [{wch:28},{wch:12},...Array(12).fill({wch:7}),{wch:10}];
+    return ws;
+  };
+
+  // ── SHEET 2: MOTIVOS DE CONSULTA ─────────────────────────────
+  const buildMotivos = () => {
+    const rows = [];
+    const merges = [];
+    let r = 0;
+    rows.push([`MOTIVOS DE CONSULTA POR APARATO / SISTEMA — ${anioActual}`, ...Array(15).fill('')]);
+    merges.push({s:{r:0,c:0},e:{r:0,c:15}});r++;
+    rows.push(['SISTEMA','TOTAL ANUAL','PLANTA',...MESES_EN,'TOTAL']);r++;
+
+    SISTEMAS.forEach((s,si)=>{
+      const sistTot = sistByPM[si].reduce((sum,pd)=>sum+pd.reduce((a,b)=>a+b,0),0);
+      PLANTAS.forEach((p,pi)=>{
+        const datos=sistByPM[si][pi];
+        const tot=datos.reduce((a,b)=>a+b,0);
+        rows.push([pi===0?s.label:'', pi===0?sistTot:'', p,...datos,tot]);
+        if(pi===0) merges.push({s:{r,c:0},e:{r+3,c:0}});
+        if(pi===0) merges.push({s:{r,c:1},e:{r+3,c:1}});
+        r++;
+      });
+    });
+
+    const totM=Array(12).fill(0).map((_,mi)=>SISTEMAS.reduce((s,_,si)=>s+PLANTAS.reduce((ss,_,pi)=>ss+sistByPM[si][pi][mi],0),0));
+    rows.push(['TOTAL MENSUAL','',...[''].concat(totM),totM.reduce((a,b)=>a+b,0)]);
+
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges']=merges;
+    ws['!cols']=[{wch:24},{wch:12},{wch:14},...Array(12).fill({wch:7}),{wch:9}];
+    return ws;
+  };
+
+  // ── SHEET 3: RESUMEN MES ─────────────────────────────────────
+  const buildResumen = () => {
+    const mi = mesActual-1;
+    const mesNombre = MESES_ES[mi]||'';
+    const rows = [];
+    rows.push([`RESUMEN EJECUTIVO — ${mesNombre.toUpperCase()} ${anioActual}`,...Array(5).fill('')]);
+    rows.push(['']);
+    rows.push(['INDICADOR','BARRANCAS','JUVENTUD','CANTERA','AMÉRICAS','TOTAL']);
+
+    const indicadores = [
+      ['Total consultas', ...PLANTAS.map(p=>cons.filter(c=>normEq(c.planta,p)&&(parseInt(c.mesNum||0)-1)===mi).length)],
+      ['Consultas ENF',   ...PLANTAS.map(p=>cons.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='ENF'&&(parseInt(c.mesNum||0)-1)===mi).length)],
+      ['Consultas MED',   ...PLANTAS.map(p=>cons.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='MED'&&(parseInt(c.mesNum||0)-1)===mi).length)],
+      ['Incapacidades',   ...PLANTAS.map(p=>INC.filter(r=>normEq(r.planta,p)).length)],
+      ['Inc. prolongadas >28d',...PLANTAS.map(p=>INC.filter(r=>normEq(r.planta,p)&&(parseInt(r.incDias)||0)>=28).length)],
+      ['Días perdidos',   ...PLANTAS.map(p=>INC.filter(r=>normEq(r.planta,p)).reduce((s,r)=>s+(parseInt(r.incDias)||0),0))],
+      ['Pacientes únicos',...PLANTAS.map(p=>new Set(cons.filter(c=>normEq(c.planta,p)&&(parseInt(c.mesNum||0)-1)===mi).map(c=>c.noEmp)).size)],
+    ];
+
+    indicadores.forEach(row=>{
+      const vals=row.slice(1);
+      rows.push([...row,vals.reduce((a,b)=>a+b,0)]);
+    });
+
+    rows.push(['']);
+    rows.push(['TOP 10 DIAGNÓSTICOS DEL MES','CONSULTAS']);
+    const dxCnt={};
+    cons.filter(c=>(parseInt(c.mesNum||0)-1)===mi).forEach(c=>{
+      const dx=c.diagnostico||c.motivoConsulta||'Sin especificar';
+      dxCnt[dx]=(dxCnt[dx]||0)+1;
+    });
+    Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([dx,n])=>{
+      rows.push([dx,n]);
+    });
+
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:30},{wch:14},{wch:14},{wch:14},{wch:14},{wch:12}];
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}}];
+    return ws;
+  };
+
+  // ── SHEET 4: NOTAS ───────────────────────────────────────────
+  const buildNotas = () => {
+    const rows=[
+      [`NOTAS EJECUTIVAS — SALUD OCUPACIONAL ${anioActual}`,''],
+      [''],
+      ['SECCIÓN','CONTENIDO'],
+      ['Campaña del mes',''],
+      ['Campaña próximo mes',''],
+      ['Riesgos potenciales',''],
+      ['Retos actuales',''],
+      ['Acciones pendientes',''],
+      ['Logros del mes',''],
+      ['Médico responsable','Dr. Jaime Iván Martínez Espinoza — Cédula 12021447'],
+      ['Fecha de generación',new Date().toLocaleDateString('es-MX')],
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:28},{wch:60}];
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:1}}];
+    return ws;
+  };
+
+  XLSX.utils.book_append_sheet(wb, buildMetricas(), 'MÉTRICAS');
+  XLSX.utils.book_append_sheet(wb, buildMotivos(), 'MOTIVOS DE CONSULTA');
+  XLSX.utils.book_append_sheet(wb, buildResumen(), 'RESUMEN MES');
+  XLSX.utils.book_append_sheet(wb, buildNotas(), 'NOTAS EJECUTIVAS');
+
+  const nombre = `Reporte_SO_Teleflex_${anioActual}_${(MESES_ES[mesActual-1]||'').toUpperCase()}.xlsx`;
+  XLSX.writeFile(wb, nombre);
+  toast('✅ Reporte descargado: '+nombre,'ok');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
