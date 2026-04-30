@@ -1415,10 +1415,10 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
         <h2 style="font-size:18px;font-weight:800;margin:0">📊 Dashboard Salud Ocupacional</h2>
         <p id="dash-periodo-label" style="font-size:12px;opacity:.75;margin:2px 0 0"></p>
       </div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-gh btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="syncAll().then(()=>renderDash())">🔄 Actualizar</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="descargarReporte()">📥 Reporte PDF</button>
-        <button class="btn btn-sm" style="background:rgba(13,107,94,.8);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="descargarReporte()">📥 PDF</button>
+        <button class="btn btn-sm" style="background:rgba(13,107,94,.8);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel</button>
       </div>
     </div>
     <!-- Filtros en grid -->
@@ -1650,6 +1650,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div class="sw">
       <span class="si">🔍</span>
       <input type="text" id="ad-q" placeholder="Buscar por nombre o No. empleado..." oninput="renderAntidoping()" autocomplete="off">
+    </div>
+    <!-- Botones de descarga (visibles abajo de filtros) -->
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);font-weight:700" onclick="descargarReporte()">📥 Reporte PDF</button>
+      <button class="btn btn-sm" style="background:rgba(13,107,94,.9);color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
     </div>
   </div>
   <!-- KPIs -->
