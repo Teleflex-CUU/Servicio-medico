@@ -629,6 +629,10 @@ function renderInc(){
   const activas=lista.filter(r=>incActivaCheck(r));
   const diasInc=lista.reduce((s,r)=>s+(parseInt(r.incDias)||0),0);
   const prolongadas=lista.filter(r=>(parseInt(r.incDias)||0)>=28);
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <button class="btn" onclick="descargarReporte()">📥 Reporte PDF</button>
+  <button class="btn" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
+</div>
   // KPIs
   const setK=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   setK('ki-act',activas.length);
