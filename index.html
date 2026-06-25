@@ -1039,7 +1039,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
 
       <div class="fi">
         <label>Medicamento entregado</label>
-        <input type="text" id="past-tx" placeholder="Ej: Ibuprofeno 400mg, Paracetamol, Berocca..." style="font-size:13px">
+        <input type="text" id="past-tx" list="dl-medicamentos" placeholder="Ej: Ibuprofeno 400mg, Paracetamol, Berocca..." style="font-size:13px">
       </div>
 
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
@@ -1064,7 +1064,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
       <div class="sec-t" style="margin:0">📊 Estadística del día</div>
       <span id="past-stats-turno" style="font-size:11px;color:var(--tx3)"></span>
     </div>
-    <!-- Botones descarga -->
+    <!-- Alertas proactivas -->
+  <div id="dash-alertas-freq" style="margin-bottom:12px"></div>
+  <!-- Botones descarga -->
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
     <button class="btn" onclick="descargarReporte()">📥 Reporte PDF</button>
     <button class="btn" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
@@ -1362,6 +1364,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div class="kpi am"><div class="kv" id="d-dias">0</div><div class="kl">Días incap.</div></div>
     <div class="kpi" style="border-left:3px solid #0891B2"><div class="kv" id="d-prom" style="color:#0891B2;font-size:20px">0</div><div class="kl">Prom. cons/día</div></div>
     <div class="kpi" style="border-left:3px solid #059669"><div class="kv" id="d-frec" style="color:#059669;font-size:20px">—</div><div class="kl">Diagnóstico más frecuente</div></div>
+    <div id="dash-comp-mes"></div>
   </div>
 
   <!-- Gráfica principal con línea de tendencia -->
@@ -1451,6 +1454,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-gh btn-sm" onclick="renderClasificador()">🔄 Actualizar</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#1D3F8A,#0D6B5E);color:#fff;font-weight:700" onclick="sincronizarReglasDxAhora()">☁️ Sincronizar ahora</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="exportarReglasDx()">📥 Exportar reglas</button>
     </div>
   </div>
@@ -1815,6 +1819,31 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   </div>
 </div>
 
+<datalist id="dl-medicamentos">
+<option value="Paracetamol 500mg">
+<option value="Ibuprofeno 400mg">
+<option value="Naproxeno 250mg">
+<option value="Metamizol 500mg">
+<option value="Diclofenaco 50mg">
+<option value="Ketorolaco 10mg">
+<option value="Omeprazol 20mg">
+<option value="Butilhioscina 10mg">
+<option value="Loratadina 10mg">
+<option value="Cetirizina 10mg">
+<option value="Salbutamol inhalador">
+<option value="Ambroxol jarabe">
+<option value="Dextrometorfano jarabe">
+<option value="Complejo B">
+<option value="Vitamina C">
+<option value="Electrolitos orales">
+<option value="Captopril 25mg">
+<option value="Glucosa oral">
+<option value="Solución salina">
+<option value="Aciclovir crema">
+<option value="Curación / gasas">
+<option value="Referencia a IMSS">
+<option value="Reposo / observación">
+</datalist>
 <div id="toast"></div>
 </div><!-- /app -->
 <script>
@@ -1862,7 +1891,10 @@ function buildCapFormEnf(emp){
     <input type="hidden" id="f-cie">
     <span id="f-cie-badge" style="display:none;background:#CCFBF1;color:#0D9488;font-family:monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px;display:none"></span>
   </div>
-  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, indicaciones..."></textarea></div>
+  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, indicaciones..."></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+    <span style="font-size:9px;color:var(--tx3);align-self:center">Rápido:</span>
+    <button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Paracetamol 500mg')">+ Paracetamol 500mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Ibuprofeno 400mg')">+ Ibuprofeno 400mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Omeprazol 20mg')">+ Omeprazol 20mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Complejo B')">+ Complejo B</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Reposo / observación')">+ Reposo / observación</button>
+  </div></div>
   <div class="fi"><label>Seguimiento</label><select id="f-seg"><option>Alta</option><option>Control</option><option>Referencia IMSS</option><option>Envío a urgencias</option></select></div>
   <div class="fi"><label>Incapacidad</label><select id="f-inc" onchange="toggleIncFields(this.value)"><option>No</option><option>Sí - Enfermedad general</option><option>Sí - Riesgo de trabajo</option><option>Sí - Riesgo de trayecto</option><option>Sí - Maternidad</option></select></div>
   <div id="f-inc-fields" style="display:none">
@@ -1927,7 +1959,10 @@ function buildCapFormMed(emp){
     <span id="f-cie-badge" style="display:none;background:#CCFBF1;color:#0D9488;font-family:monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px"></span>
   </div>
   <div class="fi"><label>Exploración física</label><textarea id="f-exploracion" rows="2" placeholder="Hallazgos relevantes..."></textarea></div>
-  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, dosis, indicaciones..."></textarea></div>
+  <div class="fi"><label>Plan / Tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, dosis, indicaciones..."></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+    <span style="font-size:9px;color:var(--tx3);align-self:center">Rápido:</span>
+    <button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Paracetamol 500mg')">+ Paracetamol 500mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Ibuprofeno 400mg')">+ Ibuprofeno 400mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Omeprazol 20mg')">+ Omeprazol 20mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Complejo B')">+ Complejo B</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Reposo / observación')">+ Reposo / observación</button>
+  </div></div>
   <div class="fi"><label>Seguimiento</label><select id="f-seg"><option>Alta</option><option>Control</option><option>Referencia especialidad</option><option>Referencia IMSS</option><option>Envío a urgencias</option></select></div>
   <div class="fi"><label>Incapacidad</label><select id="f-inc" onchange="toggleIncFields(this.value)"><option>No</option><option>Sí - Enfermedad general</option><option>Sí - Riesgo de trabajo</option><option>Sí - Riesgo de trayecto</option><option>Sí - Maternidad</option></select></div>
   <div id="f-inc-fields" style="display:none">
@@ -2409,7 +2444,10 @@ function buildFormEnf(emp){
   <div class="fi" style="margin-top:8px"><label>CIE-10 / Diagnóstico (opcional)</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Opcional: busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"></div>
   <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg" placeholder="Descripción diagnóstica..."></div>
   <div class="fi"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div>
-  <div class="fi"><label>Tratamiento / Plan</label><textarea id="f-plan" rows="2" placeholder="Medicamentos, indicaciones..."></textarea></div>
+  <div class="fi"><label>Tratamiento / Plan</label><textarea id="f-plan" rows="2" placeholder="Medicamentos, indicaciones..."></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+    <span style="font-size:9px;color:var(--tx3);align-self:center">Rápido:</span>
+    <button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Paracetamol 500mg')">+ Paracetamol 500mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Ibuprofeno 400mg')">+ Ibuprofeno 400mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Omeprazol 20mg')">+ Omeprazol 20mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Complejo B')">+ Complejo B</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Reposo / observación')">+ Reposo / observación</button>
+  </div></div>
   <div class="g2"><div class="fi" style="margin:0"><label>Incapacidad</label><select id="f-incap" onchange="toggleIncBlock()"><option value="No">No</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option></select></div><div class="fi" style="margin:0"><label>Seguimiento</label><select id="f-seg"><option>Alta</option><option>Seguimiento 24h</option><option>Seguimiento 48h</option><option>Referencia médico</option></select></div></div>
   <div id="inc-block" style="display:none;background:var(--rd2);border-radius:8px;padding:10px;margin-bottom:10px"><div class="g3"><div class="fi" style="margin:0"><label>Fecha inicio</label><input type="date" id="f-ii" oninput="calcFin('f-ii','f-ds','f-if')"></div><div class="fi" style="margin:0"><label>Días</label><input type="number" id="f-ds" min="1" oninput="calcFin('f-ii','f-ds','f-if')"></div><div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="f-if" class="auto" readonly></div></div></div>
   <div style="display:flex;gap:8px"><button class="btn btn-tl" style="flex:1;padding:12px" onclick="guardarConsulta('ENF')">✅ Guardar nota</button><button class="btn btn-gh" onclick="imprimirConstancia()">🖨️ Constancia</button></div>
@@ -2430,7 +2468,10 @@ function buildFormMed(emp){
   <div class="fi"><label>CIE-10 / Diagnóstico (opcional)</label><div style="position:relative"><input type="text" id="f-cq" placeholder="Opcional: busca por código o descripción..." oninput="buscarCIE10Input(this,'f-cd','f-cv','f-dg')" autocomplete="off"><div class="cie10-drop" id="f-cd"></div></div><input type="hidden" id="f-cv"></div>
   <div class="fi"><label>Diagnóstico</label><input type="text" id="f-dg" placeholder="Descripción diagnóstica..."></div>
   <div class="g2"><div class="fi" style="margin:0"><label>Alergias</label><input type="text" id="f-al" value="${esc(al)}" placeholder="Penicilina, látex..."></div><div class="fi" style="margin:0"><label>Enfermedades crónicas</label><input type="text" id="f-cr" value="${esc(cr)}" placeholder="DM2, HAS..."></div></div>
-  <div class="fi"><label>Plan y tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, indicaciones, dosis..."></textarea></div>
+  <div class="fi"><label>Plan y tratamiento</label><textarea id="f-plan" rows="3" placeholder="Medicamentos, indicaciones, dosis..."></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+    <span style="font-size:9px;color:var(--tx3);align-self:center">Rápido:</span>
+    <button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Paracetamol 500mg')">+ Paracetamol 500mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Ibuprofeno 400mg')">+ Ibuprofeno 400mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Omeprazol 20mg')">+ Omeprazol 20mg</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Complejo B')">+ Complejo B</button><button type="button" class="btn btn-gh btn-xs" style="font-size:10px;padding:2px 8px" onclick="insertMedChip('f-plan','Reposo / observación')">+ Reposo / observación</button>
+  </div></div>
   <div class="g2"><div class="fi" style="margin:0"><label>Seguimiento</label><select id="f-seg"><option>Alta</option><option>Seguimiento 24h</option><option>Seguimiento 48h</option><option>Referencia IMSS</option><option>Reposo en casa</option></select></div><div class="fi" style="margin:0"><label>Incapacidad</label><select id="f-incap" onchange="toggleIncBlock()"><option value="No">No</option><option>Riesgo de trabajo</option><option>Riesgo de trayecto</option><option>Enfermedad general</option><option>Maternidad</option></select></div></div>
   <div id="inc-block" style="display:none;background:var(--rd2);border-radius:8px;padding:10px;margin-bottom:10px"><div class="g3"><div class="fi" style="margin:0"><label>Fecha inicio</label><input type="date" id="f-ii" oninput="calcFin('f-ii','f-ds','f-if')"></div><div class="fi" style="margin:0"><label>Días</label><input type="number" id="f-ds" min="1" oninput="calcFin('f-ii','f-ds','f-if')"></div><div class="fi" style="margin:0"><label>Fecha fin (auto)</label><input type="date" id="f-if" class="auto" readonly></div></div></div>
   <div style="display:flex;gap:8px"><button class="btn btn-bl" style="flex:1;padding:12px" onclick="guardarConsulta('MED')">✅ Guardar valoración</button><button class="btn btn-gh" onclick="imprimirNotaMed()">📄 Nota</button><button class="btn btn-gh" onclick="imprimirReceta()">💊 Receta</button><button class="btn btn-gh" onclick="imprimirST7()">📑 ST-7</button></div>
@@ -2912,6 +2953,13 @@ async function guardarInc(){
   if(titulo) titulo.textContent='📋 Nueva Incapacidad';
   const noEmp=g('inc-es');if(!noEmp){toast('Selecciona un empleado','err');return;}
   const ini=g('inc-ii');if(!ini){toast('La fecha inicio es obligatoria','err');return;}
+  if(!editFolio){
+    const yaActiva=INC.find(r=>String(r.noEmp)===String(noEmp)&&incActivaCheck(r));
+    if(yaActiva){
+      toast('⚠️ Este empleado ya tiene una incapacidad activa (folio '+(yaActiva.folio||'—')+'). Edítala en vez de crear otra.','err');
+      return;
+    }
+  }
   const emp=HC.find(x=>String(x.noEmp)===String(noEmp))||{};
   const folioIMSS = g('inc-folio');
   const folio = folioIMSS || 'INC-'+Date.now().toString().slice(-6);
@@ -3538,6 +3586,47 @@ function renderDash(){
   if(dlBtns) dlBtns.innerHTML=`
     <button class="btn btn-gh btn-sm" onclick="descargarReporte()">📥 Reporte PDF</button>
     <button class="btn btn-sm" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>`;
+
+  // ── Alertas proactivas de alta frecuencia (últimos 30 días) ────
+  const alertEl=document.getElementById('dash-alertas-freq');
+  if(alertEl){
+    const hace30=new Date(); hace30.setDate(hace30.getDate()-30);
+    const cntFrec={};
+    CONS.forEach(c=>{
+      const f=String(c.fecha||''); let dt=null;
+      try{ dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00'); }catch(e){}
+      if(dt&&!isNaN(dt)&&dt>=hace30&&c.noEmp){
+        const k=String(c.noEmp);
+        if(!cntFrec[k]) cntFrec[k]={nombre:c.nombre,noEmp:c.noEmp,planta:c.planta,n:0};
+        cntFrec[k].n++;
+      }
+    });
+    const altos=Object.values(cntFrec).filter(p=>p.n>=8).sort((a,b)=>b.n-a.n);
+    if(altos.length){
+      alertEl.innerHTML=`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:10px;padding:12px 16px">
+        <div style="font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:6px">🔴 ${altos.length} paciente(s) con alta frecuencia (8+ consultas en 30 días)</div>
+        <div style="font-size:12px;color:#7F1D1D">${altos.slice(0,5).map(p=>p.nombre+' (No.'+p.noEmp+', '+p.n+' consultas)').join(' · ')}${altos.length>5?' · y '+(altos.length-5)+' más':''}</div>
+      </div>`;
+    } else alertEl.innerHTML='';
+  }
+
+  // ── Comparativo mes actual vs mes anterior ──────────────────────
+  const compMesEl=document.getElementById('dash-comp-mes');
+  if(compMesEl){
+    const hoy=new Date();
+    const mesAct=hoy.getMonth()+1, anioAct=hoy.getFullYear();
+    const mesPrevDate=new Date(anioAct,hoy.getMonth()-1,1);
+    const mesPrev=mesPrevDate.getMonth()+1, anioPrev=mesPrevDate.getFullYear();
+    const totAct=CONS.filter(c=>parseInt(c.mesNum)===mesAct&&parseInt(c.anio)===anioAct).length;
+    const totPrev=CONS.filter(c=>parseInt(c.mesNum)===mesPrev&&parseInt(c.anio)===anioPrev).length;
+    const diff=totAct-totPrev;
+    const pct=totPrev>0?Math.round(diff/totPrev*100):0;
+    const subiendo=diff>0;
+    compMesEl.innerHTML=`<div class="kpi" style="margin:0;border-left:3px solid ${subiendo?'var(--rd)':'var(--tl)'}">
+      <div class="kv" style="color:${subiendo?'var(--rd)':'var(--tl)'}">${subiendo?'▲':diff<0?'▼':'='} ${Math.abs(pct)}%</div>
+      <div class="kl">vs. mes anterior (${totPrev}→${totAct})</div>
+    </div>`;
+  }
 }
 
 
@@ -3558,7 +3647,7 @@ function buscarCapEmp(val){
   const lc=val.toLowerCase();
   const matches=HC.filter(e=>String(e.noEmp||'').toLowerCase().includes(lc)||String(e.nombre||'').toLowerCase().includes(lc)).slice(0,8);
   if(!matches.length){drop.classList.remove('show');return;}
-  drop.innerHTML=matches.map(e=>`<div class="si-item" onclick="abrirConsultaEmpleado('${esc(e.noEmp)}')"><div class="si-name">${e.nombre}</div><div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}</div></div>`).join('');
+  drop.innerHTML=matches.map(e=>{const ult=ultimaAtencion(e.noEmp);return`<div class="si-item" onclick="abrirConsultaEmpleado('${esc(e.noEmp)}')"><div class="si-name">${e.nombre}</div><div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}${ult?' · <span style="color:var(--am)">Últ.: '+ult+'</span>':''}</div></div>`;}).join('');
   drop.classList.add('show');
 }
 function abrirConsultaEmpleado(noEmp, empObj){
@@ -3886,11 +3975,13 @@ function buscarPastilleo(val){
   const q = norm(val);
   const matches = HC.filter(e=>norm(e.noEmp||'').includes(q)||norm(e.nombre||'').includes(q)).slice(0,8);
   if(!matches.length){drop.classList.remove('show');return;}
-  drop.innerHTML = matches.map(e=>`
-    <div class="si-item" onclick="selPastEmp('${esc(String(e.noEmp))}')">
+  drop.innerHTML = matches.map(e=>{
+    const ult=ultimaAtencion(e.noEmp);
+    return`<div class="si-item" onclick="selPastEmp('${esc(String(e.noEmp))}')">
       <div class="si-name">${e.nombre}</div>
-      <div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}</div>
-    </div>`).join('');
+      <div class="si-meta">No.${e.noEmp} · ${e.planta||'—'} · ${e.depto||'—'}${ult?' · <span style="color:var(--am)">Últ. atención: '+ult+'</span>':''}</div>
+    </div>`;
+  }).join('');
   drop.classList.add('show');
 }
   
@@ -5741,6 +5832,39 @@ function generarReporteEjecutivoExcel(){
   toast('✅ Reporte descargado: '+nombre,'ok');
 }
 
+
+function insertMedChip(id, text){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const sep = el.value && !el.value.trim().endsWith(',') ? ', ' : '';
+  el.value = (el.value||'').trim() ? el.value.trim()+sep+text : text;
+  el.focus();
+}
+
+
+function ultimaAtencion(noEmp){
+  const regs = CONS.filter(c=>String(c.noEmp)===String(noEmp));
+  if(!regs.length) return '';
+  let mejor=null, mejorFecha=null;
+  regs.forEach(c=>{
+    const f=String(c.fecha||'');
+    let dt=null;
+    try{ dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00'); }catch(e){}
+    if(dt&&!isNaN(dt)&&(!mejorFecha||dt>mejorFecha)){mejorFecha=dt;mejor=c;}
+  });
+  if(!mejor) return '';
+  return mejorFecha.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+}
+
+
+async function sincronizarReglasDxAhora(){
+  const total = Object.keys(_DX_RULES).length;
+  toast('☁️ Sincronizando '+total+' regla(s)...','inf');
+  const r = await gasPost({action:'saveRules', rules: JSON.stringify(_DX_RULES)});
+  if(r.ok) toast('✅ Reglas sincronizadas con Sheets ('+total+')','ok');
+  else toast('⚠️ No se pudo sincronizar — revisa tu conexión','err');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
   initSimpleSearches();
@@ -5770,15 +5894,7 @@ function calcIMCf(){
     needle.style.left = percent + '%';
   }
 }
-  function cargarDatosClinicosPastilleo(emp){
-  const al = document.getElementById('past-alergias');
-  const cr = document.getElementById('past-cronicos');
-
-  if(!al || !cr) return;
-
-  al.value = getAlergias(emp.noEmp) || 'Sin alergias registradas';
-  cr.value = getCronicos(emp.noEmp) || 'Sin antecedentes registrados';
-}
+  // (cargarDatosClinicosPastilleo — versión duplicada eliminada, se usa la definición original)
   function buscarCitaMain(q) {
   const drop = document.getElementById('cit-drop-main');  // El contenedor donde se mostrarán los resultados
   if (!drop) return;
