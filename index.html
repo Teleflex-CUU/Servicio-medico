@@ -885,6 +885,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div id="nav-tabs" style="display:flex;gap:1px;align-items:center"></div>
     <div class="nav-end">
       <span class="dot dok" id="sync-dot" title="Estado sync"></span>
+      <span id="cola-pendiente-badge" onclick="reintentarColaPendiente()" style="display:none;cursor:pointer;background:var(--am);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;margin-left:6px;white-space:nowrap"></span>
       <span class="rol-badge" id="nav-badge"></span>
       <div class="nav-user" id="nav-user"></div>
       <button class="nav-btn" id="btn-dark" onclick="toggleDark()" title="Modo oscuro">🌙</button>
@@ -1101,6 +1102,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div><h2>Incapacidades</h2></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-gh btn-sm" onclick="syncInc()">🔄 Sync</button>
+      <button class="btn btn-gh btn-sm" onclick="verBitacora()">📜 Bitácora</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#0F2942,#1D3F8A);color:#fff;font-weight:700" onclick="reporteIncSemanal()">📊 Reporte semanal</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="descargarIncSemanalExcel()">📥 Excel nómina</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-weight:800;font-size:13px;padding:8px 18px" onclick="openModal('mo-inc')">📋 + Nueva incapacidad</button>
@@ -1411,6 +1413,12 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <div class="card cp" style="margin-bottom:12px">
     <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🔥 Mapa de calor — Planta × Turno</div>
     <div id="dash-heatmap"></div>
+  </div>
+
+  <!-- Comparativo por planta — mes actual vs mes anterior -->
+  <div class="card cp" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">📈 Comparativo por planta — mes actual vs anterior</div>
+    <div id="dash-comp-planta"></div>
   </div>
 
   <!-- Comparativa planta × mes (solo en vista año) -->
@@ -2046,7 +2054,61 @@ function getWeek(d){const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getD
 
 // ── Network ───────────────────────────────────────────────────
 async function gasGet(p){try{const url=GAS+'?'+Object.entries(p).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);const r=await fetch(url,{signal:ctrl.signal});return await r.json();}catch(e){return{ok:false};}}
-async function gasPost(body){try{const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);const r=await fetch(GAS,{method:'POST',body:JSON.stringify(body),signal:ctrl.signal});return await r.json();}catch(e){return{ok:false};}}
+async function gasPost(body){
+  try{
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);
+    const r=await fetch(GAS,{method:'POST',body:JSON.stringify(body),signal:ctrl.signal});
+    const data=await r.json();
+    if(data&&data.ok) quitarDeColaPendiente(body);
+    else agregarAColaPendiente(body);
+    return data;
+  }catch(e){
+    agregarAColaPendiente(body);
+    return{ok:false};
+  }
+}
+
+// ── COLA DE REINTENTOS ────────────────────────────────────────────
+const SK_COLA='so_cola_pendiente';
+function getColaPendiente(){ try{return JSON.parse(localStorage.getItem(SK_COLA)||'[]');}catch(e){return [];} }
+function setColaPendiente(arr){ try{localStorage.setItem(SK_COLA,JSON.stringify(arr));}catch(e){} actualizarBadgeCola(); }
+function agregarAColaPendiente(body){
+  const cola=getColaPendiente();
+  cola.push({body, intentos:0, ts:Date.now()});
+  setColaPendiente(cola);
+}
+function quitarDeColaPendiente(body){
+  const cola=getColaPendiente();
+  const idx=cola.findIndex(item=>JSON.stringify(item.body)===JSON.stringify(body));
+  if(idx>=0){ cola.splice(idx,1); setColaPendiente(cola); }
+}
+function actualizarBadgeCola(){
+  const n=getColaPendiente().length;
+  const el=document.getElementById('cola-pendiente-badge');
+  if(el) el.style.display = n>0 ? 'inline-flex' : 'none';
+  if(el) el.textContent = '⏳ '+n+' pendiente'+(n!==1?'s':'')+' por sincronizar';
+}
+async function reintentarColaPendiente(){
+  const cola=getColaPendiente();
+  if(!cola.length) return;
+  let exitos=0;
+  const restante=[];
+  for(const item of cola){
+    if(item.intentos>=8){ continue; } // descarta tras 8 intentos fallidos
+    try{
+      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),12000);
+      const r=await fetch(GAS,{method:'POST',body:JSON.stringify(item.body),signal:ctrl.signal});
+      const data=await r.json();
+      if(data&&data.ok){ exitos++; }
+      else { item.intentos++; restante.push(item); }
+    }catch(e){ item.intentos++; restante.push(item); }
+  }
+  setColaPendiente(restante);
+  if(exitos>0) toast('☁️ '+exitos+' registro(s) pendiente(s) sincronizados','ok');
+}
+// Reintenta cada 45s automáticamente mientras la app esté abierta
+setInterval(()=>{ if(getColaPendiente().length) reintentarColaPendiente(); }, 45000);
+
 
 // ════════════════════════════════════════════════════════════════
 // AUTH — Solo dropdown, sin contraseña
@@ -2243,6 +2305,7 @@ initDashSelects();
 
   // Sync automático al inicio
   cargarReglasDx();
+  actualizarBadgeCola();
   syncAll().then(()=>{
     // If pastilleo is active screen, refresh it
     const scP=document.getElementById('sc-pastilleo');
@@ -3630,6 +3693,26 @@ function renderDash(){
       <div class="kv" style="color:${subiendo?'var(--rd)':'var(--tl)'}">${subiendo?'▲':diff<0?'▼':'='} ${Math.abs(pct)}%</div>
       <div class="kl">vs. mes anterior (${totPrev}→${totAct})</div>
     </div>`;
+
+    // ── Desglose por planta ──────────────────────────────────────
+    const compPlantaEl=document.getElementById('dash-comp-planta');
+    if(compPlantaEl){
+      const filas=PLANTAS.map(p=>{
+        const ta=CONS.filter(c=>normEq(c.planta,p)&&parseInt(c.mesNum)===mesAct&&parseInt(c.anio)===anioAct).length;
+        const tp=CONS.filter(c=>normEq(c.planta,p)&&parseInt(c.mesNum)===mesPrev&&parseInt(c.anio)===anioPrev).length;
+        const d=ta-tp;
+        const pp=tp>0?Math.round(d/tp*100):(ta>0?100:0);
+        return{p,ta,tp,d,pp};
+      });
+      compPlantaEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        ${filas.map(f=>`
+          <div style="background:var(--sf3);border-radius:8px;padding:10px;border-left:3px solid ${f.d>0?'var(--rd)':f.d<0?'var(--tl)':'var(--bor)'}">
+            <div style="font-size:11px;font-weight:700;color:var(--tx2)">${f.p}</div>
+            <div style="font-size:18px;font-weight:900;color:${f.d>0?'var(--rd)':f.d<0?'var(--tl)':'var(--tx)'};font-family:monospace">${f.d>0?'▲':f.d<0?'▼':'='} ${Math.abs(f.pp)}%</div>
+            <div style="font-size:10px;color:var(--tx3)">${f.tp} → ${f.ta} consultas</div>
+          </div>`).join('')}
+      </div>`;
+    }
   }
 }
 
@@ -4875,11 +4958,43 @@ function eliminarIncapacidad(folio){
   if(!confirm('¿Eliminar esta incapacidad? Esta acción no se puede deshacer.')) return;
   const idx=INC.findIndex(r=>String(r.folio)===String(folio));
   if(idx<0){toast('No encontrada','err');return;}
+  const registro={...INC[idx]};
   INC.splice(idx,1);
   sv(SK.inc,INC);
   renderInc();
   toast('✅ Incapacidad eliminada','ok');
-  gasPost({action:'delInc',folio}).catch(()=>{});
+  // Bitácora local + remota
+  registrarBitacora('Eliminar incapacidad', folio, 'Empleado: '+(registro.nombre||'—')+' · Tipo: '+(registro.tipo||registro.incapacidad||'—')+' · Días: '+(registro.incDias||'—'));
+  gasPost({action:'delInc',folio,eliminadoPor:USER.nombre,fechaEliminacion:new Date().toLocaleString('es-MX'),detalle:JSON.stringify(registro)}).catch(()=>{});
+}
+
+// ── BITÁCORA DE ACCIONES SENSIBLES (eliminaciones, ediciones) ────
+const SK_BITACORA='so_bitacora';
+function registrarBitacora(accion, folio, detalle){
+  const log={accion, folio, detalle, usuario:USER?USER.nombre:'—', fecha:new Date().toLocaleString('es-MX')};
+  const arr=ld(SK_BITACORA)||[];
+  arr.unshift(log);
+  if(arr.length>500) arr.length=500;
+  sv(SK_BITACORA, arr);
+  gasPost({action:'logBitacora', val:log}).catch(()=>{});
+}
+function verBitacora(){
+  const arr=ld(SK_BITACORA)||[];
+  if(!arr.length){toast('Sin registros en la bitácora','inf');return;}
+  let mo=document.getElementById('mo-bitacora');
+  if(!mo){
+    mo=document.createElement('div');
+    mo.id='mo-bitacora'; mo.className='ov';
+    mo.innerHTML='<div class="mo" style="max-width:640px"><div class="mh"><div class="mt-mo">📜 Bitácora de acciones</div><button class="mc" onclick="closeModal(\'mo-bitacora\')">✕</button></div><div class="mb" id="mo-bitacora-body" style="max-height:60vh;overflow-y:auto"></div></div>';
+    document.body.appendChild(mo);
+  }
+  document.getElementById('mo-bitacora-body').innerHTML = arr.map(l=>`
+    <div style="padding:8px 10px;border-bottom:1px solid var(--bor);font-size:12px">
+      <strong>${l.accion}</strong> · ${l.folio||'—'}
+      <div style="font-size:11px;color:var(--tx3);margin-top:2px">${l.detalle||''}</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:2px">${l.usuario} · ${l.fecha}</div>
+    </div>`).join('');
+  mo.classList.add('open');
 }
 
 // ── REPORTE SEMANAL INCAPACIDADES ────────────────────────────────
@@ -5476,10 +5591,15 @@ function renderAntidoping(){
 }
 
 async function guardarAntidoping(){
+  if(!bloquearDobleClick('antidoping')){toast('⏳ Ya se está guardando, espera un momento','inf');return;}
   const noEmp = document.getElementById('ad-emp-id')?.value||'';
   const fecha = document.getElementById('ad-fecha')?.value||'';
   if(!noEmp){toast('Selecciona un empleado','err');return;}
   if(!fecha){toast('Selecciona la fecha','err');return;}
+  const dupAd = ANTIDOPING.find(r=>String(r.noEmp)===String(noEmp)&&r.fecha===fecha);
+  if(dupAd && !confirm('Ya existe una prueba antidoping para este empleado en esa fecha. ¿Registrar otra de todos modos?')){
+    _guardando['antidoping']=false; return;
+  }
   const emp = HC.find(e=>String(e.noEmp)===String(noEmp))||{};
   const g2 = id=>document.getElementById(id)?.value||'Negativo';
   const reg = {
@@ -5567,10 +5687,17 @@ function renderVales(){
 }
 
 async function guardarVale(){
+  if(!bloquearDobleClick('vale')){toast('⏳ Ya se está guardando, espera un momento','inf');return;}
   const noEmp = document.getElementById('val-emp-id')?.value||'';
   const fecha = document.getElementById('val-fecha')?.value||'';
   if(!noEmp){toast('Selecciona un empleado','err');return;}
   if(!fecha){toast('Selecciona la fecha','err');return;}
+  const tipoVale = document.getElementById('val-tipo')?.value||'Comida caliente';
+  const fechaFmt = new Date(fecha+'T12:00').toLocaleDateString('es-MX');
+  const dupVal = VALES.find(r=>String(r.noEmp)===String(noEmp)&&r.fecha===fechaFmt&&r.tipo===tipoVale);
+  if(dupVal && !confirm('Ya se registró un vale de este tipo para este empleado en esa fecha. ¿Registrar otro de todos modos?')){
+    _guardando['vale']=false; return;
+  }
   const emp = HC.find(e=>String(e.noEmp)===String(noEmp))||{};
   const reg = {
     folio:'VAL-'+Date.now().toString().slice(-6),
@@ -6017,6 +6144,16 @@ function autoClasificarSugeridos(){
     toast('No se encontraron coincidencias suficientes para auto-clasificar. Clasifica algunos manualmente primero.','err');
   }
   renderClasificador();
+}
+
+
+// ── PROTECCIÓN CONTRA DOBLE CAPTURA (debounce de botones de guardar) ──
+const _guardando = {};
+function bloquearDobleClick(key, ms){
+  if(_guardando[key]) return false;
+  _guardando[key]=true;
+  setTimeout(()=>{_guardando[key]=false;}, ms||2500);
+  return true;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
