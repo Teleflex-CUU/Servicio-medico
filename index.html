@@ -1454,6 +1454,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-gh btn-sm" onclick="renderClasificador()">🔄 Actualizar</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#7C3AED,#A21CAF);color:#fff;font-weight:700" onclick="autoClasificarSugeridos()">🪄 Auto-clasificar similares</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#1D3F8A,#0D6B5E);color:#fff;font-weight:700" onclick="sincronizarReglasDxAhora()">☁️ Sincronizar ahora</button>
       <button class="btn btn-sm" style="background:linear-gradient(135deg,#166534,#15803D);color:#fff;font-weight:700" onclick="exportarReglasDx()">📥 Exportar reglas</button>
     </div>
@@ -3492,15 +3493,18 @@ function renderDash(){
   // ── Consultas por aparato y sistema ─────────────────────────────
   const sisArr=topSis;
   const maxSis=sisArr[0]?.[1]||1;
-  document.getElementById('dash-dx').innerHTML=sisArr.map(([k,v],i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bor);font-size:11px">
+  document.getElementById('dash-dx').innerHTML=sisArr.map(([k,v],i)=>{
+    const esSin = k==='Sin clasificar';
+    return`
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bor);font-size:11px;${esSin?'cursor:pointer':''}" ${esSin?'onclick="irAClasificarSinCategoria()" title="Clic para ir a clasificar estos diagnósticos"':''}>
       <span style="min-width:20px;font-size:14px">${getSistemaIcon(k)}</span>
-      <div style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</div>
+      <div style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${esSin?'color:var(--rd)':''}">${k}${esSin?' ✏️':''}</div>
       <div style="background:var(--sf3);border-radius:3px;height:6px;width:80px;overflow:hidden;flex-shrink:0">
-        <div style="height:100%;background:${i<3?'#1D3F8A':'#0D6B5E'};border-radius:3px;width:${Math.round(v/maxSis*100)}%"></div>
+        <div style="height:100%;background:${esSin?'var(--rd)':i<3?'#1D3F8A':'#0D6B5E'};border-radius:3px;width:${Math.round(v/maxSis*100)}%"></div>
       </div>
       <span style="font-size:11px;font-weight:800;min-width:22px;text-align:right">${v}</span>
-    </div>`).join('')||'<div style="color:var(--tx3);font-size:12px;padding:10px">Sin datos</div>';
+    </div>`;
+  }).join('')||'<div style="color:var(--tx3);font-size:12px;padding:10px">Sin datos</div>';
 
   // ── Mapa de calor planta × turno ──────────────────────────────
   const turnos=['Matutino','Vespertino'];
@@ -5278,7 +5282,7 @@ function renderClasificador(){
   CONS.forEach(c=>{
     if(!c.diagnostico) return;
     const dx = String(c.diagnostico||'').trim();
-    if(!dxMap[dx]) dxMap[dx] = {dx, count:0, sistema: clasificarDx(dx), custom: !!getCustomRules()[norm(dx)]};
+    if(!dxMap[dx]) dxMap[dx] = {dx, count:0, sistema: clasificarDxConReglas(dx), custom: !!getCustomRules()[norm(dx)]};
     dxMap[dx].count++;
   });
 
@@ -5312,6 +5316,39 @@ function renderClasificador(){
 
   const sistemas = Object.keys(DX_SISTEMAS).concat(['Otros','Sin clasificar']);
 
+  // ── Vista AGRUPADA (solo cuando el filtro es "sin" y no hay búsqueda) ──
+  if(filtro==='sin' && !q){
+    const grupos = agruparSimilares(lista, 0.55);
+    el.innerHTML = grupos.map((grp,gi)=>{
+      const principal = grp.terms[0];
+      const otros = grp.terms.slice(1);
+      return`
+      <div style="border-radius:10px;margin-bottom:8px;background:${grp.sugerido?'var(--am3)':'var(--sf3)'};border:1.5px solid ${grp.sugerido?'var(--am)':'var(--rd)'};overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-weight:700;font-size:13px">${principal.dx}${otros.length?` <span style="font-size:11px;color:var(--tx3);font-weight:400">+ ${otros.length} variante(s) similar(es)</span>`:''}</div>
+            <div style="font-size:11px;color:var(--tx3);margin-top:2px">
+              ${grp.total} consulta${grp.total!==1?'s':''} en ${grp.terms.length} término(s)
+              ${grp.sugerido?` · <span style="color:var(--am);font-weight:700">💡 Sugerido: ${getSistemaIcon(grp.sugerido)} ${grp.sugerido}</span>`:''}
+            </div>
+            ${otros.length?`<div style="font-size:10px;color:var(--tx3);margin-top:4px">Incluye: ${otros.map(o=>o.dx).join(', ')}</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <select id="cl-grp-sel-${gi}" style="padding:6px 10px;border-radius:7px;border:1.5px solid var(--bor);font-size:12px;font-family:inherit;outline:none;background:var(--bg);color:var(--tx);max-width:220px">
+              <option value="">${grp.sugerido?'— Usar sugerencia —':'— Selecciona —'}</option>
+              ${sistemas.map(s=>`<option value="${s}" ${s===grp.sugerido?'selected':''}>${getSistemaIcon(s)} ${s}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm" style="background:var(--tl);color:#fff;font-weight:700" onclick="aplicarGrupoDx(${gi})">✓ Aplicar a todo el grupo</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    // Store groups globally for aplicarGrupoDx
+    window._clGrupos = grupos;
+    return;
+  }
+
+  // ── Vista PLANA (todos / custom / búsqueda) ─────────────────────
   el.innerHTML = lista.map(d=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${d.sistema==='Sin clasificar'?'var(--sf3)':'var(--bg)'};border:1.5px solid ${d.sistema==='Sin clasificar'?'var(--rd)':'var(--bor)'};flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
@@ -5332,6 +5369,17 @@ function renderClasificador(){
         ${d.custom?`<button class="btn btn-gh btn-xs" title="Eliminar regla" onclick="eliminarReglaDx('${d.dx.replace(/'/g,"\'")}')">✕</button>`:''}
       </div>
     </div>`).join('');
+}
+
+function aplicarGrupoDx(gi){
+  const grp = (window._clGrupos||[])[gi];
+  if(!grp) return;
+  const sel = document.getElementById('cl-grp-sel-'+gi);
+  const sistema = (sel?.value) || grp.sugerido;
+  if(!sistema){ toast('Selecciona un sistema primero','err'); return; }
+  grp.terms.forEach(t=>saveCustomRule(t.dx, sistema));
+  toast('✅ '+grp.terms.length+' término(s) clasificados como '+sistema,'ok');
+  renderClasificador();
 }
 
 function aplicarReglaDx(dx, sistema){
@@ -5863,6 +5911,112 @@ async function sincronizarReglasDxAhora(){
   const r = await gasPost({action:'saveRules', rules: JSON.stringify(_DX_RULES)});
   if(r.ok) toast('✅ Reglas sincronizadas con Sheets ('+total+')','ok');
   else toast('⚠️ No se pudo sincronizar — revisa tu conexión','err');
+}
+
+
+function irAClasificarSinCategoria(){
+  go('clasificador');
+  setTimeout(()=>{
+    const sel=document.getElementById('cl-filtro');
+    if(sel){sel.value='sin';}
+    renderClasificador();
+  },150);
+}
+
+
+// ── SIMILITUD DE TEXTO (para agrupar diagnósticos parecidos) ────
+function levenshtein(a,b){
+  if(a===b) return 0;
+  const m=a.length, n=b.length;
+  if(!m) return n; if(!n) return m;
+  let prev=Array(n+1).fill(0).map((_,i)=>i);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++){
+      cur[j]=a[i-1]===b[j-1]?prev[j-1]:1+Math.min(prev[j-1],prev[j],cur[j-1]);
+    }
+    prev=cur;
+  }
+  return prev[n];
+}
+function similitud(a,b){
+  const na=norm(a), nb=norm(b);
+  if(!na||!nb) return 0;
+  if(na===nb) return 1;
+  // Similitud por palabras compartidas (Jaccard)
+  const wa=new Set(na.split(/\s+/).filter(w=>w.length>2));
+  const wb=new Set(nb.split(/\s+/).filter(w=>w.length>2));
+  let jac=0;
+  if(wa.size&&wb.size){
+    const inter=[...wa].filter(w=>wb.has(w)).length;
+    const union=new Set([...wa,...wb]).size;
+    jac=inter/union;
+  }
+  // Similitud por distancia de edición (para typos/variantes cortas)
+  const maxLen=Math.max(na.length,nb.length);
+  const lev=maxLen?1-(levenshtein(na,nb)/maxLen):0;
+  return Math.max(jac,lev);
+}
+
+// ── AGRUPAR DIAGNÓSTICOS SIMILARES (clustering simple) ───────────
+function agruparSimilares(lista, umbral){
+  umbral = umbral||0.55;
+  const rules = getCustomRules();
+  const ruleEntries = Object.entries(rules);
+  const restantes = [...lista];
+  const grupos = [];
+  while(restantes.length){
+    const base = restantes.shift();
+    const grupo = [base];
+    for(let i=restantes.length-1;i>=0;i--){
+      if(similitud(base.dx, restantes[i].dx) >= umbral){
+        grupo.push(restantes[i]);
+        restantes.splice(i,1);
+      }
+    }
+    // Sugerencia: busca si algún término ya clasificado (regla) es similar a alguno del grupo
+    let sugerido = null, mejorSim = 0;
+    grupo.forEach(item=>{
+      ruleEntries.forEach(([key,sistema])=>{
+        const s = similitud(item.dx, key);
+        if(s >= 0.6 && s > mejorSim){ mejorSim = s; sugerido = sistema; }
+      });
+    });
+    grupos.push({
+      terms: grupo,
+      total: grupo.reduce((s,g)=>s+g.count,0),
+      sugerido
+    });
+  }
+  // Ordenar por total de consultas, descendente
+  grupos.sort((a,b)=>b.total-a.total);
+  return grupos;
+}
+
+// ── AUTO-CLASIFICAR: aplica automáticamente donde hay sugerencia fuerte ──
+function autoClasificarSugeridos(){
+  const dxMap = {};
+  CONS.forEach(c=>{
+    if(!c.diagnostico) return;
+    const dx = String(c.diagnostico||'').trim();
+    if(!dxMap[dx]) dxMap[dx] = {dx, count:0, sistema: clasificarDxConReglas(dx)};
+    dxMap[dx].count++;
+  });
+  const sinClasif = Object.values(dxMap).filter(d=>d.sistema==='Sin clasificar');
+  const grupos = agruparSimilares(sinClasif, 0.6);
+  let aplicados = 0, terms = 0;
+  grupos.forEach(grp=>{
+    if(grp.sugerido){
+      grp.terms.forEach(t=>{ saveCustomRule(t.dx, grp.sugerido); terms++; });
+      aplicados++;
+    }
+  });
+  if(aplicados){
+    toast('🪄 '+aplicados+' grupo(s) auto-clasificados ('+terms+' términos) — revisa el resultado','ok');
+  } else {
+    toast('No se encontraron coincidencias suficientes para auto-clasificar. Clasifica algunos manualmente primero.','err');
+  }
+  renderClasificador();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
