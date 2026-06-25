@@ -1395,7 +1395,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
   <!-- Fila 3: diagnósticos + día de semana -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
     <div class="card cp">
-      <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🩺 Top 10 diagnósticos</div>
+      <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:10px">🩺 Consultas por aparato y sistema</div>
       <div id="dash-dx"></div>
     </div>
     <div class="card cp">
@@ -2229,7 +2229,16 @@ function go(id){
   }
   if(id==='inc') renderInc();
   if(id==='citas') renderCitas();
-  if(id==='dash') renderDash();
+  if(id==='dash'){
+    renderDash();
+    syncAll(true).then(()=>renderDash());
+    if(window._dashAutoRefresh) clearInterval(window._dashAutoRefresh);
+    window._dashAutoRefresh = setInterval(()=>{
+      const sc=document.getElementById('sc-dash');
+      if(sc && sc.classList.contains('on')) syncAll(true).then(()=>renderDash());
+      else clearInterval(window._dashAutoRefresh);
+    }, 60000);
+  }
   if(id==='pastilleo'){limpiarPastilleo();renderPastilleoHoy();}
   if(id==='usr') renderUsuarios();
   if(id==='clasificador') renderClasificador();
@@ -3343,8 +3352,23 @@ function renderDash(){
   const pacUnicos=new Set(data.map(c=>String(c.noEmp||'').toLowerCase()).filter(Boolean)).size;
   const diasFiltro=per==='dia'?1:per==='semana'?7:per==='mes'&&mes?new Date(anio,mes,0).getDate():365;
   const promDia=diasFiltro>0?(data.length/diasFiltro).toFixed(1):0;
-  const dxCnt={};data.forEach(c=>{if(c.diagnostico)dxCnt[c.diagnostico]=(dxCnt[c.diagnostico]||0)+1;});
-  const topDx=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]);
+  const dxCnt={};const dxLabel={};
+  data.forEach(c=>{
+    if(!c.diagnostico) return;
+    const key=norm(c.diagnostico);
+    if(!key) return;
+    dxCnt[key]=(dxCnt[key]||0)+1;
+    if(!dxLabel[key]) dxLabel[key]=String(c.diagnostico).trim();
+  });
+  const topDx=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[dxLabel[k]||k,v]);
+
+  // ── Agrupación por aparato / sistema (clasificador Dx) ────────
+  const sisCnt={};
+  data.forEach(c=>{
+    const sis=clasificarDxConReglas(c.diagnostico||c.motivoConsulta||'');
+    sisCnt[sis]=(sisCnt[sis]||0)+1;
+  });
+  const topSis=Object.entries(sisCnt).sort((a,b)=>b[1]-a[1]);
   const incActivas=INC.filter(r=>incActivaCheck(r)).length;
   const diasInc=INC.reduce((s,r)=>s+(parseInt(r.incDias)||0),0);
 
@@ -3417,15 +3441,15 @@ function renderDash(){
   data.forEach(c=>{const f=String(c.fecha||'');let dt=null;try{if(f.includes('/'))dt=new Date(f.split('/').reverse().join('-')+'T12:00');else dt=new Date(f+'T12:00');}catch(e){}if(dt&&!isNaN(dt))dSem[(dt.getDay()+6)%7]++;});
   newChart('ch-diasem',{type:'bar',data:{labels:diasSem,datasets:[{data:dSem,backgroundColor:dSem.map((_,i)=>i>=5?'rgba(184,150,46,.7)':'rgba(13,107,94,.65)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 
-  // ── Top diagnósticos ──────────────────────────────────────────
-  const dxArr=topDx.slice(0,10);
-  const maxDx=dxArr[0]?.[1]||1;
-  document.getElementById('dash-dx').innerHTML=dxArr.map(([k,v],i)=>`
+  // ── Consultas por aparato y sistema ─────────────────────────────
+  const sisArr=topSis;
+  const maxSis=sisArr[0]?.[1]||1;
+  document.getElementById('dash-dx').innerHTML=sisArr.map(([k,v],i)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--bor);font-size:11px">
-      <span style="min-width:16px;font-size:10px;font-weight:700;color:var(--tx3)">${i+1}</span>
+      <span style="min-width:20px;font-size:14px">${getSistemaIcon(k)}</span>
       <div style="flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</div>
       <div style="background:var(--sf3);border-radius:3px;height:6px;width:80px;overflow:hidden;flex-shrink:0">
-        <div style="height:100%;background:${i<3?'#1D3F8A':'#0D6B5E'};border-radius:3px;width:${Math.round(v/maxDx*100)}%"></div>
+        <div style="height:100%;background:${i<3?'#1D3F8A':'#0D6B5E'};border-radius:3px;width:${Math.round(v/maxSis*100)}%"></div>
       </div>
       <span style="font-size:11px;font-weight:800;min-width:22px;text-align:right">${v}</span>
     </div>`).join('')||'<div style="color:var(--tx3);font-size:12px;padding:10px">Sin datos</div>';
@@ -4455,8 +4479,23 @@ function descargarReporte(){
 
   const byTipo={ENF:0,MED:0};data.forEach(c=>{if(byTipo[c.tipoAtencion]!==undefined)byTipo[c.tipoAtencion]++;});
   const pacUnicos=new Set(data.map(c=>String(c.noEmp||'').toLowerCase()).filter(Boolean)).size;
-  const dxCnt={};data.forEach(c=>{if(c.diagnostico)dxCnt[c.diagnostico]=(dxCnt[c.diagnostico]||0)+1;});
-  const topDx=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]);
+  const dxCnt={};const dxLabel={};
+  data.forEach(c=>{
+    if(!c.diagnostico) return;
+    const key=norm(c.diagnostico);
+    if(!key) return;
+    dxCnt[key]=(dxCnt[key]||0)+1;
+    if(!dxLabel[key]) dxLabel[key]=String(c.diagnostico).trim();
+  });
+  const topDx=Object.entries(dxCnt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[dxLabel[k]||k,v]);
+
+  // ── Agrupación por aparato / sistema (clasificador Dx) ────────
+  const sisCnt={};
+  data.forEach(c=>{
+    const sis=clasificarDxConReglas(c.diagnostico||c.motivoConsulta||'');
+    sisCnt[sis]=(sisCnt[sis]||0)+1;
+  });
+  const topSis=Object.entries(sisCnt).sort((a,b)=>b[1]-a[1]);
   const pCnt=PLANTAS.map(p=>({planta:p,total:data.filter(c=>normEq(c.planta,p)).length,enf:data.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='ENF').length,med:data.filter(c=>normEq(c.planta,p)&&c.tipoAtencion==='MED').length}));
   const tCnt=[{t:'Matutino'},{t:'Vespertino'},{t:'Tiempo extra'}].map(x=>({turno:x.t,n:data.filter(c=>normEq(c.turno,x.t)).length}));
   const diasSem=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
