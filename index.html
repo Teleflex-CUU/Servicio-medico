@@ -6156,6 +6156,19 @@ function bloquearDobleClick(key, ms){
   return true;
 }
 
+
+function renderAlertaFrecuenciaPastilleo(emp){
+  const alertas = document.getElementById('past-alertas');
+  if(!alertas || !emp) return;
+  const al = getAlergias(emp.noEmp);
+  const frec = calcFrecuencia(emp.noEmp);
+  let h='';
+  if(al) h+=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-weight:700;color:#854D0E;font-size:12px">⚠️ Alergias: ${al}</div>`;
+  if(frec>=8) h+=`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#B91C1C">🔴 Alta frecuencia:</strong> ${frec} consultas en los últimos 30 días.</div>`;
+  else if(frec>=4) h+=`<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#92400E">🟡 Frecuencia moderada:</strong> ${frec} consultas en los últimos 30 días.</div>`;
+  alertas.innerHTML = h;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   cargarUsuariosLogin();
   initSimpleSearches();
