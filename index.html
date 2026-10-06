@@ -884,6 +884,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     <div class="nav-sep"></div>
     <div id="nav-tabs" style="display:flex;gap:1px;align-items:center"></div>
     <div class="nav-end">
+      <a href="https://teleflex-cuu.github.io/Embarazos/" target="_blank" rel="noopener" title="Módulo de Embarazos" style="display:inline-flex;align-items:center;gap:4px;background:rgba(124,58,237,.15);color:var(--pu);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;text-decoration:none;border:1px solid rgba(124,58,237,.3);white-space:nowrap">🤰 Embarazos</a>
       <span class="dot dok" id="sync-dot" title="Estado sync"></span>
       <span id="cola-pendiente-badge" onclick="reintentarColaPendiente()" style="display:none;cursor:pointer;background:var(--am);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;margin-left:6px;white-space:nowrap"></span>
       <span class="rol-badge" id="nav-badge"></span>
@@ -1067,10 +1068,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--sf2);
     </div>
     <!-- Alertas proactivas -->
   <div id="dash-alertas-freq" style="margin-bottom:12px"></div>
-  <!-- Botones descarga -->
+  <!-- Botones reporte -->
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" onclick="descargarReporte()">📥 Reporte PDF</button>
-    <button class="btn" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>
+    <button class="btn" style="background:linear-gradient(135deg,#0D6B5E,#166534);color:#fff;font-weight:700" onclick="actualizarReporteSheets()">📊 Actualizar reporte en Sheets</button>
   </div>
   <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
@@ -3648,11 +3648,7 @@ function renderDash(){
       <div class="kpi" style="margin:0;border-left:3px solid var(--pu)"><div class="kv" style="color:var(--pu)">${prolongadas}</div><div class="kl">Prolongadas +28d</div></div>
     </div>`;
 
-  // ── Botones de descarga ───────────────────────────────────────
-  const dlBtns=document.getElementById('dash-dl-btns');
-  if(dlBtns) dlBtns.innerHTML=`
-    <button class="btn btn-gh btn-sm" onclick="descargarReporte()">📥 Reporte PDF</button>
-    <button class="btn btn-sm" style="background:#0D6B5E;color:#fff;font-weight:700" onclick="generarReporteEjecutivoExcel()">📊 Excel Ejecutivo</button>`;
+  // (botones de descarga removidos — ver Sheets)
 
   // ── Alertas proactivas de alta frecuencia (últimos 30 días) ────
   const alertEl=document.getElementById('dash-alertas-freq');
@@ -6167,6 +6163,78 @@ function renderAlertaFrecuenciaPastilleo(emp){
   if(frec>=8) h+=`<div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#B91C1C">🔴 Alta frecuencia:</strong> ${frec} consultas en los últimos 30 días.</div>`;
   else if(frec>=4) h+=`<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:9px 14px;margin-bottom:6px;font-size:12px"><strong style="color:#92400E">🟡 Frecuencia moderada:</strong> ${frec} consultas en los últimos 30 días.</div>`;
   alertas.innerHTML = h;
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// ACTUALIZAR REPORTE MENSUAL EN GOOGLE SHEETS
+// ════════════════════════════════════════════════════════════════
+async function actualizarReporteSheets(){
+  const anio = parseInt(document.getElementById('da-anio')?.value) || new Date().getFullYear();
+  toast('⏳ Generando reporte en Sheets...','inf');
+  setSyncDot('busy');
+
+  const PLANTAS = ['Barrancas','Juventud','Cantera','Américas'];
+  const MESES_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const SISTEMAS = [
+    {key:'Neurológico',          label:'NEUROLOGICO'},
+    {key:'Oftálmico',            label:'OFTALMICO'},
+    {key:'ORL - Oído Nariz Garganta', label:'ORL / ODONTOLOGICO'},
+    {key:'Respiratorio',         label:'ENF RESPIRATORIA'},
+    {key:'Digestivo',            label:'GASTROINTESTINAL'},
+    {key:'Urinario e Infeccioso',label:'URINARIO'},
+    {key:'Ginecológico y Reproductivo', label:'GINECOLOGICO'},
+    {key:'Dermatológico e Infeccioso',  label:'DERMATOLOGICO'},
+    {key:'Musculoesquelético',   label:'MUSCULOESQUELETICO'},
+    {key:'Psicosocial',          label:'FATIGA / ESTRES'},
+    {key:'Traumatología y Urgencias',   label:'TRAUMATOLOGIA'},
+    {key:'Cardiovascular',       label:'CARDIOVASCULAR'},
+    {key:'Metabólico y Endócrino',      label:'METABOLICO'},
+    {key:'Preventivo y Procedimientos', label:'PREVENTIVO'},
+    {key:'Otros',                label:'OTROS'},
+  ];
+
+  // ── Filtrar por año ─────────────────────────────────────────────
+  const cons = CONS.filter(c=>(parseInt(c.anio)||0)===anio);
+  const inc  = INC;
+
+  // ── Calcular métricas ────────────────────────────────────────────
+  const byPlantaMes = (arr, fn) =>
+    PLANTAS.map(p => Array(12).fill(0).map((_,mi) =>
+      arr.filter(r => normEq(r.planta,p) && fn(r,mi)).length));
+
+  const mesDeReg = (r,mi) => {
+    const f=String(r.incInicio||r.fecha||'');
+    let dt=null;
+    try{ dt=f.includes('/')?new Date(f.split('/').reverse().join('-')+'T12:00'):new Date(f+'T12:00'); }catch(e){}
+    return dt&&!isNaN(dt)&&dt.getMonth()===mi&&dt.getFullYear()===anio;
+  };
+
+  const metricos = {
+    incProlongadas: byPlantaMes(inc, (r,mi)=>(parseInt(r.incDias)||0)>=28&&mesDeReg(r,mi)),
+    incMaternidad:  byPlantaMes(inc, (r,mi)=>normInc(r.tipo||r.incapacidad||'','maternidad')&&mesDeReg(r,mi)),
+    diasPerdidos:   PLANTAS.map(p=>Array(12).fill(0).map((_,mi)=>
+      inc.filter(r=>normEq(r.planta,p)&&mesDeReg(r,mi)).reduce((s,r)=>s+(parseInt(r.incDias)||0),0))),
+    accidentes:     byPlantaMes(inc, (r,mi)=>(normInc(r.tipo||r.incapacidad||'','trabajo')||normInc(r.tipo||r.incapacidad||'','trayecto'))&&mesDeReg(r,mi)),
+    consultas:      PLANTAS.map(p=>Array(12).fill(0).map((_,mi)=>
+      cons.filter(c=>normEq(c.planta,p)&&(parseInt(c.mesNum)||0)-1===mi).length)),
+  };
+
+  const motivos = SISTEMAS.map(s=>
+    PLANTAS.map(p=>Array(12).fill(0).map((_,mi)=>
+      cons.filter(c=>normEq(c.planta,p)&&(parseInt(c.mesNum)||0)-1===mi&&
+        clasificarDxConReglas(c.diagnostico||c.motivoConsulta||'')===s.key).length)));
+
+  const payload = { action:'actualizarReporte', anio, metricos, motivos,
+    sistemasLabels: SISTEMAS.map(s=>s.label), plantasLabels: PLANTAS, mesesLabels: MESES_EN };
+
+  const r = await gasPost(payload);
+  setSyncDot(r.ok?'ok':'err');
+  if(r.ok){
+    toast('✅ Reporte actualizado en Sheets (año '+anio+')','ok');
+  } else {
+    toast('⚠️ Error al actualizar: '+(r.msg||'revisa el GAS'),'err');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
